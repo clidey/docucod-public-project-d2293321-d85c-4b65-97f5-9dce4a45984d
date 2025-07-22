@@ -3,4 +3,315 @@ title: "Ingesting Documents of All Types"
 description: "Learn how to seamlessly ingest text, PDFs, images, and videos into Morphik—enabling deep search, metadata extraction, and multimodal understanding. This guide walks through file upload and ingestion via the Python SDK and REST API, with best practices for chunking and format handling."
 ---
 
-*This page will automatically be generated from the codebase*
+# Ingesting Documents of All Types
+
+Welcome to Morphik's ingestion guide. Here, you'll learn to effortlessly bring your text, PDFs, images, and videos into Morphik to unlock powerful search, metadata extraction, and multimodal understanding capabilities. This guide focuses exclusively on document ingestion workflows via both the Python SDK and REST API, highlighting best practices around file upload, chunking, and handling various formats.
+
+---
+
+## Workflow Overview
+
+### What You'll Achieve
+
+- Seamlessly ingest **text documents** (plain text, rich metadata)
+- Upload and index **files** like PDFs, images, and videos
+- Understand how Morphik handles **chunking** and **embedding** for different formats
+- Incorporate **metadata** and apply **rules** to enhance ingested data
+- Scope ingestion to **folders** and **end users** to manage and partition data
+
+### Prerequisites
+
+- Access to a Morphik instance (hosted or self-hosted) with valid API credentials
+- Installed Python SDK (`morphik`) or access to Morphik REST API endpoints
+- Basic knowledge of asynchronous requests (for Python SDK) or HTTP APIs
+- Required permissions (`write` access) to ingest documents
+
+### Expected Outcome
+
+After following this guide, you'll have documents fully ingested into Morphik, ready for retrieval, search, enrichment, or graph creation. You'll be confident handling various data types and applying best practices for metadata and chunk processing.
+
+### Time Estimate
+
+Approximately 15-30 minutes depending on your familiarity with Morphik and your chosen ingestion method.
+
+### Difficulty Level
+
+Beginner to Intermediate
+
+---
+
+## Step-by-Step Instructions
+
+### 1. Ingesting Plain Text Documents
+
+Morphik allows direct ingestion of text content with optional metadata, folder, and user scoping.
+
+#### Using the Python SDK
+
+```python
+from morphik import Morphik
+
+db = Morphik("<YOUR_MORPHIK_URI>")
+
+text_content = "Morphik simplifies working with unstructured data."
+metadata = {"category": "tech", "author": "Morphik"}
+
+# Ingest text with optional metadata
+ingested_doc = db.ingest_text(text_content, metadata=metadata)
+print(f"Ingested document ID: {ingested_doc.external_id}")
+```
+
+#### Using the REST API
+
+POST to `/ingest/text` with JSON body:
+
+```json
+{
+  "content": "Morphik simplifies working with unstructured data.",
+  "metadata": {"category": "tech", "author": "Morphik"},
+  "folder_name": "Research",          
+  "end_user_id": "user@example.com"
+}
+```
+
+A successful response returns the document ID and ingestion status.
+
+#### Key Notes:
+
+- Folder scoping (`folder_name`) automatically creates folders if they don't exist and associates the document.
+- `end_user_id` scopes documents to specific users for partitioned access.
+- Metadata can be any dictionary of key-value pairs used for filtering or graph building.
+
+---
+
+### 2. Ingesting Files (PDFs, Images, Videos)
+
+Files are ingested by uploading binary content. Morphik automatically detects file type, processes pages/images, chunks accordingly, and extracts metadata.
+
+#### Using the Python SDK
+
+```python
+file_path = "examples/assets/colpali_example.pdf"
+doc = db.ingest_file(file_path, metadata={"category": "research", "topic": "technology"})
+print(f"Ingested file with ID: {doc.external_id}")
+```
+
+#### Using the REST API
+
+POST to `/ingest/file` with multipart form data:
+
+- `file`: The file binary
+- `metadata`: JSON string with metadata
+- Optional: `folder_name`, `end_user_id`, `rules`, `use_colpali`
+
+Example (curl):
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@colpali_example.pdf" \
+  -F "metadata={\"category\": \"research\", \"topic\": \"technology\"}" \
+  https://api.morphik.ai/ingest/file
+```
+
+#### Important Details:
+
+- Morphik supports a wide range of file types including PDFs, images (JPEG, PNG), Word documents, and videos.
+- PDFs are turned into images for chunking.
+- Word documents are converted to PDF internally for proper processing.
+- For image-heavy documents and videos, enabling `use_colpali` activates Morphik's multimodal embedding engine for better semantic understanding.
+- The system supports automatic chunk padding, reranking, and embedding generation.
+
+---
+
+### 3. Applying Rules During Ingestion
+
+Morphik's ingestion can optionally apply rules for metadata extraction, PII removal, summarization, or classification.
+
+#### Defining Rules
+
+Rules are typically JSON or Python objects that specify:
+- **Metadata Extraction** based on schemas
+- **Natural Language Processing** (e.g., summarize or redact content)
+
+#### Example Python Rule Usage
+
+```python
+from morphik.rules import MetadataExtractionRule, NaturalLanguageRule
+
+rules = [
+    MetadataExtractionRule(schema=YourPydanticSchema),
+    NaturalLanguageRule(prompt="Remove PII such as names and emails."),
+]
+doc = db.ingest_text(text_content, rules=rules, metadata={"category": "financial"})
+```
+
+#### Using REST API
+
+Pass rules as JSON in the `rules` field during ingest.
+
+---
+
+### 4. Best Practices for Chunking and Metadata Handling
+
+- Morphik automatically splits documents into manageable chunks optimized for embeddings.
+- After ingestion, chunks are enriched with metadata and stored efficiently.
+- Folder and user scoping metadata are preferred at the document level to ensure consistent filtering.
+- Use incorporated chunk rules to aggregate or augment metadata.
+- When updating documents, prefer the `add` strategy to append rather than replace contents.
+
+---
+
+### 5. Updating Existing Documents
+
+You can add content or metadata to existing documents using update operations.
+
+- **Text Updates** append or replace content.
+- **File Updates** upload new versions, preserving older ones with versioning.
+- Metadata updates can be applied without reprocessing chunks.
+- Update strategies allow controlled merging of content.
+
+Example update call with Python SDK:
+
+```python
+db.update_document(
+  document_id=doc_id,
+  content="Additional text.",
+  metadata={"updated": True},
+  update_strategy="add"
+)
+```
+
+---
+
+### 6. Folder and User Scoping
+
+Folders allow grouping and workflow automation. End-user IDs enable multi-user partitioning.
+
+- Uploading to a **new folder name** automatically creates the folder.
+- Documents inherit folder and user scoping for access filtering and retrieval.
+- Scoping applies to retrieval, graph generation, and query operations.
+
+Use these scoping fields in API calls or SDK methods to control data visibility and workflow behavior.
+
+---
+
+## Examples
+
+### Ingest a Text Document with Metadata
+
+```python
+from morphik import Morphik
+
+db = Morphik("<MORPHIK_URI>")
+
+text = "Morphik enables powerful AI search and metadata extraction."
+metadata = {"category": "tech", "author": "Team Morphik"}
+doc = db.ingest_text(text, metadata=metadata)
+print(f"Document ID: {doc.external_id}")
+```
+
+### Ingest a PDF File with Folder and Rules
+
+```python
+file_path = "report.pdf"
+rules = [
+    {"type": "metadata_extraction", "schema": {"title": "string", "author": "string"}},
+    {"type": "natural_language", "prompt": "Summarize the key findings."},
+]
+doc = db.ingest_file(file_path, metadata={"department": "finance"}, folder_name="Reports", rules=rules)
+print(f"Ingested file ID: {doc.external_id}")
+```
+
+### REST API Example to Ingest Text
+
+```http
+POST /ingest/text
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "content": "This is sample text document.",
+  "metadata": {"project": "alpha"},
+  "folder_name": "ProjectAlpha",
+  "end_user_id": "user@example.com"
+}
+```
+
+---
+
+## Troubleshooting & Tips
+
+### Common Issues
+
+- **Permission Errors**: Ensure your API token has `write` permission.
+- **File Upload Failures**: Confirm the file is not empty and content type is recognized.
+- **Chunking Problems**: Extremely large files or unsupported formats may require conversion before ingestion.
+- **Folder or User Scoping Doesn't Apply**: Provide exact folder names and user IDs consistently.
+
+### Best Practices
+
+- Apply ingestion **rules** for cleaned, summarized, or structured data.
+- Use **folder scoping** to organize documents logically and control workflows.
+- Use **batch ingestion** endpoints to process multiple files efficiently.
+- Monitor ingestion status and errors via the Morphik Console or API.
+
+### Performance Considerations
+
+- Enable **`use_colpali`** flag for image or video files to leverage multimodal embeddings.
+- Chunk size and format influence embedding performance; Morphik auto-optimizes for you.
+- Metadata filters can restrict scope for faster retrieval and graph creation.
+
+---
+
+## Next Steps & Related Content
+
+- **Multimodal Search & Retrieval**: Leverage multimodal queries on ingested documents.
+- **Metadata Extraction with Rules Engine**: Automate deep metadata extraction workflows.
+- **Building Knowledge Graphs**: Create and query knowledge graphs from your documents.
+- **Using the Morphik Console**: Manage ingestion and queries via the UI.
+- **Python SDK Reference**: Explore full SDK capabilities for ingestion and querying.
+
+Explore other guides in the [Morphik Documentation](https://docs.morphik.ai) to enhance your workflows.
+
+---
+
+## Additional Resources
+
+- [Morphik Python SDK](https://github.com/morphik-org/morphik-core/blob/main/sdks/python)
+- [Morphik REST API Documentation](https://docs.morphik.ai/api-reference/api-endpoints/documents-api)
+- [Morphik Console User Guide](/getting-started/first-steps-and-validation/using-the-morphik-console)
+- [Rules Engine Examples](https://github.com/morphik-org/morphik-core/blob/main/examples/rules_engine.py)
+- [Multimodal Ingestion with ColPali](https://github.com/morphik-org/morphik-core/blob/main/examples/colpali.py)
+
+---
+
+## Diagram: Document Ingestion Flow
+
+```mermaid
+flowchart TD
+  A[User prepares document or file] --> B[Call ingest_text or ingest_file]
+  B --> C{Is file?}
+  C -->|Yes| D[Save file to storage bucket]
+  C -->|No| E[Proceed with text ingestion]
+  D --> F[Queue background ingestion job]
+  E --> F
+  F --> G[Parse document into chunks]
+  G --> H[Apply rules (metadata extraction, PII removal, summarization)]
+  H --> I[Generate embeddings]
+  I --> J[Store chunks & document metadata]
+  J --> K{Folder name provided?}
+  K -->|Yes| L[Ensure folder exists & associate document]
+  K -->|No| M[Skip folder operation]
+  L --> N[Complete ingestion]
+  M --> N
+  N --> O[Document ready for retrieval, graph creation, and queries]
+
+  %% Styles
+  classDef async fill:#add8e6,stroke:#333;
+  class F,H,I,J,L async;
+```
+
+---
+
+Thank you for choosing Morphik for your AI document ingestion needs. This guide gives you the foundation to get your data indexed and richly understood for advanced AI workflows.
