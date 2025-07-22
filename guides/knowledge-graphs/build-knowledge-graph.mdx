@@ -3,4 +3,348 @@ title: "Building a Knowledge Graph from Documents"
 description: "Transform your raw data into actionable graphs. This walkthrough explains how to generate a domain-specific knowledge graph from ingested documents using SDK tools, battle-tested prompts, and customization options."
 ---
 
-*This page will automatically be generated from the codebase*
+# Building a Knowledge Graph from Documents
+
+Transform your raw data into actionable graphs. This walkthrough explains how to generate a domain-specific knowledge graph from ingested documents using SDK tools, battle-tested prompts, and customization options.
+
+---
+
+## 1. Understanding Knowledge Graphs in Morphik
+
+A knowledge graph organizes information as interconnected entities and relationships extracted from your documents. Instead of searching isolated text segments, a knowledge graph provides a rich semantic structure
+that captures how concepts relate in your domain.
+
+**Why build a knowledge graph from documents?**
+
+- Unlock deep insights by linking key concepts extracted from your content.
+- Enhance search and question answering using graph-based context.
+- Integrate complex domain knowledge into your AI workflows.
+
+This page focuses specifically on creating the knowledge graph, highlighting SDK functions, workflows, and customization options.
+
+---
+
+## 2. Prerequisites
+
+Before following this guide, you should have:
+
+- A Morphik account and access to the Morphik Python SDK (see the [SDK Installation guide](../sdks/getting-started/install-sdk))
+- One or more documents ingested into Morphik (text or files) that contain the domain information you want to extract
+- Basic familiarity with Python and asynchronous programming if using the AsyncMorphik client
+
+If you haven’t ingested documents yet, please see the guide on [Ingesting Documents of All Types](/guides/core-workflows/ingest-documents).
+
+---
+
+## 3. Workflow Overview: Creating a Knowledge Graph
+
+This workflow walks you through how to create a domain-specific knowledge graph from your existing documents using the Morphik Python SDK.
+
+### Expected Outcome
+
+- You will produce a named knowledge graph object containing extracted entities and relationships
+- This graph will be queryable and usable to enrich semantic search and completion tasks
+
+### Time Estimate
+
+15-30 minutes to complete, depending on document volume
+
+### Difficulty
+
+Intermediate - requires some familiarity with the SDK and asynchronous API calls
+
+---
+
+## 4. Step-by-Step Instructions
+
+### Step 1: Prepare Your Document Filters or IDs
+
+You can create a graph from all documents matching specific metadata filters or by specifying explicit document IDs.
+
+```python
+filters = {"category": "tech"}  # Example filter on ingested document metadata
+# or, list of specific document IDs
+documents = ["doc_123", "doc_456"]
+```
+
+
+### Step 2: Optional - Customize Entity Extraction with Prompt Overrides
+
+Morphik allows you to provide prompt override objects to tailor how entities and relationships are extracted from your documents.
+
+Example of providing custom entity extraction examples:
+
+```python
+from morphik.models import EntityExtractionExample, EntityExtractionPromptOverride, GraphPromptOverrides
+
+examples = [
+    EntityExtractionExample(label="Insulin", type="MEDICATION"),
+    EntityExtractionExample(label="Diabetes", type="CONDITION"),
+]
+entity_extraction_override = EntityExtractionPromptOverride(examples=examples)
+graph_overrides = GraphPromptOverrides(entity_extraction=entity_extraction_override)
+```
+
+This step enhances extraction accuracy by showing the model sample entities relevant to your domain.
+
+
+### Step 3: Creating the Graph with the AsyncMorphik Client
+
+Use the `create_graph` method on an `AsyncFolder` or `AsyncUserScope` or directly on `AsyncMorphik` to create the graph.
+
+Example creating from filters:
+
+```python
+from morphik.async_ import AsyncMorphik
+
+async with AsyncMorphik("morphik://owner_id:token@api.morphik.ai") as db:
+    graph = await db.create_graph(
+        name="tech_healthcare_graph",
+        filters={"category": "tech"},
+        prompt_overrides=graph_overrides  # optional
+    )
+
+    print(f"Created graph: {graph.name} with {len(graph.entities)} entities")
+```
+
+Example creating from document IDs:
+
+```python
+graph = await db.create_graph(name="custom_graph", documents=["doc_1", "doc_2"])
+```
+
+
+### Step 4: Wait for Graph Processing to Complete
+
+Graph creation may be asynchronous depending on your deployment. Use `wait_for_graph_completion` to block until ready:
+
+```python
+completed_graph = await db.wait_for_graph_completion(graph.name)
+print(f"Graph is ready: {completed_graph.name}")
+```
+
+
+### Step 5: Query and Explore Your Graph
+
+Once created, you can query your knowledge graph using the `query` method with the `graph_name` parameter. For example:
+
+```python
+response = await db.query(
+    "How is AI technology being used in healthcare?",
+    graph_name="tech_healthcare_graph",
+    hop_depth=2  # Explore relationships up to 2 hops away
+)
+print(response.completion)
+```
+
+Include relationship paths in the response by setting `include_paths=True`:
+
+```python
+response_paths = await db.query(
+    "What technologies analyze electronic health records?",
+    graph_name="tech_healthcare_graph",
+    hop_depth=2,
+    include_paths=True
+)
+
+for path in response_paths.metadata["graph"]["paths"]:
+    print(" -> ".join(path))
+```
+
+
+### Step 6: (Optional) Update Your Graph with New Documents
+
+If new documents become available, you can update an existing graph:
+
+```python
+updated_graph = await db.update_graph(
+    name="tech_healthcare_graph",
+    additional_filters={"category": "new_tech"},
+    additional_documents=["doc_789"]
+)
+
+print(f"Graph updated with {len(updated_graph.entities)} entities")
+```
+
+
+---
+
+## 5. Practical Example
+
+Here is a simplified synchronous example (for conceptual clarity - async is recommended for production):
+
+```python
+from morphik import Morphik
+
+db = Morphik("morphik://owner_id:token@api.morphik.ai")
+
+# Create a knowledge graph from all documents tagged with 'tech'
+graph = db.create_graph(name="tech_graph", filters={"category": "tech"})
+
+print(f"Graph created: {graph.name}")
+
+# Query the graph
+response = db.query(
+    "How does AI impact cloud computing?",
+    graph_name="tech_graph",
+    hop_depth=2
+)
+
+print(response.completion)
+```
+
+
+---
+
+## 6. Best Practices and Tips
+
+- **Use Filters Thoughtfully:** Narrow down which documents feed into your graph to improve relevance.
+
+- **Prompt Overrides:** Use domain-specific examples in overrides to improve entity/relationship extraction precision.
+
+- **Naming:** Give your graph a clear, descriptive name for easy identification.
+
+- **Hop Depth:** Set the `hop_depth` in queries to control the depth of explored relationships (1-3 recommended).
+
+- **Wait for Completion:** Always use `wait_for_graph_completion()` for asynchronous graph builds to ensure you query fully built graphs.
+
+- **Async Usage:** Prefer async SDK methods for responsive applications and to avoid blocking.
+
+- **Update Incrementally:** Use `update_graph` to add documents without rebuilding the entire graph.
+
+
+---
+
+## 7. Troubleshooting
+
+<AccordionGroup title="Common Issues When Building Knowledge Graphs">
+<Accordion title="No graphs found or graph creation fails">
+Ensure you have ingested documents before creating a graph. Check your authentication and folder scoping if applicable.
+</Accordion>
+<Accordion title="Graph creation appears blocked or hangs">
+Use `wait_for_graph_completion()` with a timeout to monitor progress. Check server logs for errors.
+</Accordion>
+<Accordion title="Queries return no answers or empty results">
+Verify your graph is built and contains entities. Increase `hop_depth` or check filters on documents.
+</Accordion>
+<Accordion title="Custom prompt overrides not working as expected">
+Review prompt override syntax and example formatting. Start with simple overrides and test incrementally.
+</Accordion>
+</AccordionGroup>
+
+
+---
+
+## 8. Next Steps & Related Guides
+
+- Explore [Querying and Visualizing Knowledge Graphs](/guides/knowledge-graphs/query-graph) to learn how to interrogate and visualize your graphs.
+- Learn about [Advanced: Customizing Graph Extraction and Prompts](/guides/knowledge-graphs/advanced-graph-operations) for fine-tuning entity and relationship detection.
+- For ingesting documents, see [Ingesting Documents of All Types](/guides/core-workflows/ingest-documents).
+- For integrating graphs into conversations and search, check [Conversational AI: Chatting with Your Documents](/guides/core-workflows/chat-with-your-data).
+
+
+---
+
+## 9. Reference: Key AsyncMorphik Methods for Building Graphs
+
+```python
+async def create_graph(
+    name: str,
+    filters: Optional[Dict[str, Any]] = None,
+    documents: Optional[List[str]] = None,
+    prompt_overrides: Optional[Union[GraphPromptOverrides, Dict[str, Any]]] = None
+) -> Graph
+```
+Create a knowledge graph from documents filtered by metadata or specific document IDs. Optional prompt overrides customize extraction.
+
+```python
+async def wait_for_graph_completion(
+    graph_name: str,
+    timeout_seconds: int = 300,
+    check_interval_seconds: int = 2
+) -> Graph
+```
+Poll the graph status and wait until complete, raising a timeout error if not ready.
+
+```python
+async def update_graph(
+    name: str,
+    additional_filters: Optional[Dict[str, Any]] = None,
+    additional_documents: Optional[List[str]] = None,
+    prompt_overrides: Optional[Union[GraphPromptOverrides, Dict[str, Any]]] = None
+) -> Graph
+```
+Add new documents to an existing graph with optional filters and prompt overrides.
+
+```python
+async def query(
+    query: str,
+    graph_name: Optional[str] = None,
+    hop_depth: int = 1,
+    include_paths: bool = False
+) -> CompletionResponse
+```
+Query the knowledge graph with optional depth and path inclusion.
+```
+
+---
+
+## 10. Example: Creating a Knowledge Graph with Prompt Overrides
+
+```python
+from morphik.async_ import AsyncMorphik
+from morphik.models import (
+    EntityExtractionExample,
+    EntityExtractionPromptOverride,
+    GraphPromptOverrides
+)
+
+async def main():
+    async with AsyncMorphik("morphik://owner_id:token@api.morphik.ai") as db:
+        # Define domain-specific entity examples
+        examples = [
+            EntityExtractionExample(label="Insulin", type="MEDICATION"),
+            EntityExtractionExample(label="Diabetes", type="CONDITION"),
+        ]
+
+        # Create prompt override
+        entity_override = EntityExtractionPromptOverride(examples=examples)
+        graph_overrides = GraphPromptOverrides(entity_extraction=entity_override)
+
+        # Create the graph
+        graph = await db.create_graph(
+            name="medical_graph",
+            filters={"category": "medical"},
+            prompt_overrides=graph_overrides
+        )
+
+        print(f"Created graph '{graph.name}' with {len(graph.entities)} entities")
+
+        # Wait until the graph is fully processed
+        graph_ready = await db.wait_for_graph_completion(graph.name)
+        print(f"Graph status: {graph_ready.system_metadata.get('status')}")
+
+# Run the async function
+import asyncio
+asyncio.run(main())
+```
+
+
+---
+
+For a practical view of how documents can feed into graph creation and querying, refer to the example script: [examples/knowledge_graphs.py](https://github.com/morphik-org/morphik-core/blob/main/examples/knowledge_graphs.py).
+
+---
+
+## 11. Additional Resources
+
+- Python SDK Guide: [Morphik Python SDK README](../../sdks/python/README.md)
+- Knowledge Graph API Reference: see `core/services/morphik_graph_service.py`
+- Troubleshooting Morphik Installation: [Common Installation Issues](../../getting-started/troubleshooting-help/common-install-issues)
+
+
+---
+
+Happy graph-building!
+
+---
