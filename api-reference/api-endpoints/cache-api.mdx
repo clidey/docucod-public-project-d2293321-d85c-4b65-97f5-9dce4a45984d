@@ -3,4 +3,300 @@ title: "Cache & Augmented Generation"
 description: "Endpoints for creating and interacting with persistent document caches to accelerate generation and retrieval workflows. Covers cache creation, adding/updating entries, querying, and exporting cache state for persistent or offline use cases."
 ---
 
-*This page will automatically be generated from the codebase*
+# Cache & Augmented Generation API Reference
+
+Enhance your AI-powered workflows with Morphik's Cache API, designed for creating and interacting with persistent document caches. These caches accelerate generation and retrieval by preloading relevant documents and building efficient query context states. This page offers a comprehensive guide to cache lifecycle management, including creation, updating, querying, and exporting cache state, enabling persistent or offline usage.
+
+---
+
+## Overview
+
+When dealing with large documents or complex data sets, generation tasks can become slow and costly. Morphik's Cache API enables you to create optimized, pre-populated caches keyed to a specific model and document set. By loading document content into model KV caches ahead of time, queries run faster and return richer results with reduced latency.
+
+Caches are persistent containers that bundle documents together based on filters or explicit document IDs. You have full control to create caches, add documents incrementally, refresh cache content as new data arrives, and execute queries against the cached context.
+
+<Info>
+These endpoints require authentication and enforce usage quotas in the cloud environment. Permissions are checked to ensure secure access.
+</Info>
+
+---
+
+## Base URL
+
+All cache-related endpoints are accessible under the base path:
+
+```
+/cache
+```
+
+---
+
+## Endpoints
+
+### 1. Create Cache
+
+**POST** `/cache/create`
+
+Create a new persistent cache to enable low-latency completion generation backed by a fixed set of documents.
+
+**Parameters:**
+- `name` (string, required): Unique identifier for the cache.
+- `model` (string, required): Model name for running completions (e.g., "llama2").
+- `gguf_file` (string, required): Path to the GGUF model weights file.
+- `filters` (optional dict): Metadata filters selecting documents to include.
+- `docs` (optional list of strings): Explicit list of document IDs to include.
+
+**Request example (JSON body):**
+
+```json
+{
+  "name": "ai_overview_cache",
+  "model": "llama2",
+  "gguf_file": "llama-2-7b-chat.Q4_K_M.gguf",
+  "filters": {"category": "technology"},
+  "docs": ["doc1", "doc2"]
+}
+```
+
+**Response:**
+
+Returns a dictionary describing the created cache, confirming successful creation or detailing errors.
+
+**Use Case:**
+Use this endpoint to build caches filtered by metadata or document IDs, so your model loads only relevant context for faster interactive completions.
+
+---
+
+### 2. Get Cache Info
+
+**GET** `/cache/{name}`
+
+Fetch information about the existence and load state of a cache.
+
+**Path parameters:**
+- `name` (string): Cache identifier to query.
+
+**Response:**
+
+```json
+{ "exists": true }
+```
+
+If the cache is loaded and ready, `exists` is true; otherwise false.
+
+**Use Case:**
+Check whether a cache is present and active before issuing queries or updates.
+
+---
+
+### 3. Update Cache
+
+**POST** `/cache/{name}/update`
+
+Refresh an existing cache by adding documents that match the cache filters but are not yet included.
+
+**Path parameters:**
+- `name` (string): Cache identifier to update.
+
+**Response:**
+
+```json
+{ "added": true }
+```
+
+Indicates whether new documents were incorporated.
+
+**Use Case:**
+Periodically call this to keep caches current with newly ingested documents matching your filters, without rebuilding entire caches from scratch.
+
+---
+
+### 4. Add Documents to Cache
+
+**POST** `/cache/{name}/add_docs`
+
+Add specific documents manually to an existing cache regardless of cache filters.
+
+**Parameters:**
+- `name` (string): Cache name to modify.
+- `document_ids` (list of strings): Document IDs to queue for addition.
+
+**Response:**
+
+```json
+{ "queued": true }
+```
+
+Indicates if documents were accepted for caching.
+
+**Use Case:**
+Manually enrich a cache by adding documents essential to your workload on demand.
+
+---
+
+### 5. Query Cache
+
+**POST** `/cache/{name}/query`
+
+Run a prompt query against the preloaded cache context to generate completions.
+
+**Parameters:**
+- `name` (string): Target cache.
+- `query` (string): User prompt text.
+- `max_tokens` (optional int): Limits the generated completion length.
+- `temperature` (optional float): Controls randomness in generation.
+
+**Response:**
+
+Returns a `CompletionResponse` object with:
+- `completion`: Generated text.
+- `usage`: Tokens used for prompt and completion.
+
+**Request example (JSON body):**
+
+```json
+{
+  "query": "What are the types of artificial intelligence?",
+  "max_tokens": 200,
+  "temperature": 0.7
+}
+```
+
+**Use Case:**
+Query your prebuilt cache for fast, focused AI responses leveraging the document context baked into the cache.
+
+<Tip>
+Ensure that your cache contains relevant documents before querying to maximize accuracy.
+</Tip>
+
+---
+
+## User Flow: Creating and Using a Cache
+
+<Steps>
+<Step title="Ingest Documents">
+Start by uploading or ingesting documents into Morphik using the Documents API or Console.
+</Step>
+<Step title="Create a Cache">
+Call the `/cache/create` endpoint specifying a unique cache name, model, and document selection via metadata filters or document IDs.
+</Step>
+<Step title="Update and Add Documents">
+Refresh your cache regularly with `/update` or add specific docs with `/add_docs` as your corpus evolves.
+</Step>
+<Step title="Query the Cache">
+Use `/query` to run natural language questions getting fast model-generated answers based on the cached content.
+</Step>
+</Steps>
+
+---
+
+## Practical Example: Python SDK Usage
+
+```python
+from morphik import Morphik
+
+# Connect to Morphik service
+client = Morphik("https://your-morphik-endpoint.com", api_key="YOUR_API_KEY")
+
+# Ingest a text document
+long_text = """Your long document content here..."""
+doc = client.ingest_text(long_text, metadata={"category": "tech"})
+
+# Create a cache with the ingested document
+cache = client.create_cache(
+    name="tech_cache",
+    model="llama2",
+    gguf_file="llama-2-7b-chat.Q4_K_M.gguf",
+    docs=[doc.external_id],
+)
+
+# Update the cache (optional, to add any new docs matching filters)
+cache.update()
+
+# Query the cache
+response = cache.query(
+    "Explain the major AI paradigms.",
+    max_tokens=150,
+    temperature=0.6
+)
+print("Completion:", response.completion)
+
+# Add more documents if needed
+new_doc = client.ingest_text("Additional AI topics content.", metadata={"category": "tech"})
+cache.add_docs([new_doc.external_id])
+cache.update()
+
+```
+
+---
+
+## Best Practices & Tips
+
+- Use clear, meaningful cache names to organize contexts by topic or project.
+- Combine metadata filters with explicit document lists to fine-tune cache coverage.
+- Regularly update caches to ensure up-to-date context for queries.
+- Monitor usage limits when working in cloud environments to avoid quota overruns.
+- When using large models with GGUF files, verify GPU capabilities to optimize performance.
+
+---
+
+## Common Issues & Troubleshooting
+
+<AccordionGroup title="Common Cache API Issues">
+<Accordion title="Cache Creation Fails with No Documents">
+
+If you see `No documents to add to cache` error, verify your filters or document IDs actually select existing documents. Use the Documents API to list available docs.
+
+</Accordion>
+<Accordion title="Cache Not Found on Query or Update">
+
+Ensure the cache is correctly created and loaded; the `get_cache` endpoint helps to confirm existence. Cache names are case-sensitive.
+
+</Accordion>
+<Accordion title="Permission Denied Errors">
+
+Confirm your API token and user permissions allow cache operations. Auth errors return HTTP 403 with details.
+
+</Accordion>
+<Accordion title="Query Responses Are Empty or Irrelevant">
+
+Inspect that the cache contains meaningful document context and matches the query topic. Add missing documents or refresh cache state.
+
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Under the Hood: LlamaCache Implementation
+
+Morphik currently uses a LlamaCache implementation powered by the llama.cpp library, loading GGUF-formatted model weights for fast local inference. The process:
+
+1. **Cache Initialization**: Loads specified GGUF model, ingests and tokenizes system prompt containing document content to build an initial KV cache state.
+2. **Adding Documents**: Augments the state with new documents by updating token cache without full rebuild.
+3. **Querying**: Uses cached state plus prompt to quickly generate model completions.
+4. **State Persistence**: Allows saving serialized cache state bytes and reloading to resume without reprocessing.
+
+This design balances speed and flexibility, providing reproducible, low-latency completions tied tightly to cached knowledge.
+
+---
+
+## References & Related Documentation
+
+- [Documents API Reference](../api-reference/api-endpoints/documents-api) for document ingestion and management.
+- [Authentication Overview](../api-reference/api-authentication-requests/auth-overview) for securing requests.
+- [Python SDK Usage & Examples](../../sdks/getting-started/auth-config) for working programmatically.
+- [Cache-Augmented Generation Guide](../../guides/integrations-and-caching/cache-augmentation) for conceptual workflows.
+
+---
+
+## Support & Next Steps
+
+- For setup issues, see [Troubleshooting Installation Problems](../../getting-started/troubleshooting-help/common-install-issues).
+- Join Morphik Community on Discord for live assistance.
+- Explore advanced customization in Guides covering knowledge graphs and workflows.
+
+---
+
+Your journey to faster, smarter AI interactions begins by leveraging Morphik's Cache API to put your document knowledge directly into your model's context for instant retrieval and generation.
+
+Unlock speed and accuracy—build your cache today.
