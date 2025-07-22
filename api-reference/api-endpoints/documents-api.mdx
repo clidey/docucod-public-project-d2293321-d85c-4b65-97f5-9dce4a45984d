@@ -3,4 +3,438 @@ title: "Documents"
 description: "Endpoints for ingesting, listing, searching, retrieving, and managing documents (including multimodal files). Includes example payloads for uploads, search queries, and responses. Covers parameter options for metadata extraction, chunking, and advanced search queries."
 ---
 
-*This page will automatically be generated from the codebase*
+# Documents API Reference
+
+Welcome to the Documents API endpoint reference. This section describes the full set of endpoints that allow you to ingest, list, search, retrieve, update, and manage documents within Morphik. The API supports working with all document types including multimodal files (text, images, PDFs, videos, etc.).
+
+Whether you are uploading a new document, performing semantic search, or managing document metadata and chunk data, this documentation provides concrete examples, parameter details, and best practices.
+
+---
+
+## 1. Overview
+
+### Base URL
+All endpoints are relative to your Morphik service host, typically:
+
+```
+https://api.morphik.ai/
+```
+
+Note that you must authenticate each request with your API token. See the Authentication section of the main API docs for details.
+
+### Content Types
+- Most endpoints accept and return `application/json` content.
+- File ingestion endpoints accept multipart form-data uploads.
+
+### Versioning
+The current API version is v1, implicitly used in all documented endpoints.
+
+---
+
+## 2. Authentication
+
+Every request requires bearer token authentication:
+
+```http
+Authorization: Bearer <your-token>
+```
+
+Tokens are typically retrieved from the Morphik Console or your cloud account.
+
+---
+
+## 3. Document Ingestion Endpoints
+
+### 3.1 Ingest Text Document
+
+**POST** `/ingest/text`
+
+**Description:** Ingest raw text content as a document. Supports applying metadata and rules for metadata extraction or content transformation.
+
+**Parameters (JSON body):**
+
+| Parameter   | Type             | Required | Description |
+|-------------|------------------|----------|-------------|
+| content     | string           | Yes      | The text content to ingest |
+| filename    | string           | No       | Optional filename or document name |
+| metadata    | object           | No       | User-defined metadata key-value pairs |
+| rules       | array of objects  | No       | List of ingestion rules for metadata extraction or text transformation |
+| use_colpali | boolean          | No       | Whether to use ColPali-style embedding (true for better accuracy) |
+
+**Example Request:**
+
+```json
+{
+  "content": "Artificial intelligence transforms industries.",
+  "filename": "ai_overview.txt",
+  "metadata": {"category": "research"},
+  "rules": [
+    {"type": "MetadataExtractionRule", "schema": {"title": "string", "author": "string"}}
+  ],
+  "use_colpali": true
+}
+```
+
+**Success Response:**
+
+```json
+{
+  "external_id": "doc_123abc",
+  "content_type": "text/plain",
+  "filename": "ai_overview.txt",
+  "metadata": {"category": "research"},
+  "chunk_ids": ["chunk_1", "chunk_2"],
+  "system_metadata": {"status": "processing"}
+}
+```
+
+---
+
+### 3.2 Ingest File Document
+
+**POST** `/ingest/file`
+
+**Description:** Upload a file document (PDF, image, video, etc.). Supports metadata and ingestion rules.
+
+**Parameters (multipart/form-data):**
+
+- **file** (required): The file to upload.
+- **metadata** (optional): JSON string of metadata.
+- **rules** (optional): JSON string of rules.
+- **use_colpali** (optional): "true" or "false" string for embedding model choice.
+- **filename** (optional): file name if not inferred.
+
+**Example (Python SDK snippet):**
+
+```python
+await db.ingest_file(
+    file="path/to/manual.pdf",
+    metadata={"project": "Manuals"},
+    rules=[MetadataExtractionRule(schema=MySchema)],
+    use_colpali=True
+)
+```
+
+**Success Response:** Document metadata JSON (same as ingest/text).
+
+---
+
+### 3.3 Ingest Multiple Files
+
+**POST** `/ingest/files`
+
+Upload multiple files in one request for batch ingestion.
+
+**Parameters:** Same as ingest/file, but `file` replaced by multiple files.
+
+**Behavior:** Accepts an array of files; metadata can be a single object applied to all files or a list matched by order.
+
+**Example:**
+
+```python
+await db.ingest_files(
+    files=["doc1.pdf", "doc2.png"],
+    metadata=[{"category": "reports"}, {"category": "images"}],
+    parallel=True
+)
+```
+
+---
+
+### 3.4 Ingest Directory
+
+**POST** `/ingest/directory`
+
+Recursively ingest all files in a directory optionally matching a glob pattern.
+
+**Parameters:** Similar to ingest/files but takes directory path, recursive flag, and pattern.
+
+---
+
+## 4. Document Retrieval and Search
+
+### 4.1 Retrieve Relevant Chunks
+
+**POST** `/retrieve/chunks`
+
+Retrieve document chunks relevant to a query. Supports metadata filtering and retrieval options.
+
+**Request JSON Parameters:**
+
+| Parameter          | Type     | Description |
+|--------------------|----------|-------------|
+| query              | string   | Search query text |
+| filters            | object   | Optional metadata filters |
+| k                  | integer  | Number of results to return (default 4) |
+| min_score          | float    | Minimum similarity score threshold (default 0.0) |
+| use_colpali        | boolean  | Use ColPali embeddings (recommended) |
+| folder_name(s)     | string or array | Folder scope(s) for documents |
+| padding            | integer  | Additional chunks to retrieve before/after matches (ColPali only) |
+
+**Example Query:**
+
+```json
+{
+  "query": "Explain key machine learning techniques.",
+  "filters": {"department": "AI Research"},
+  "k": 5
+}
+```
+
+**Response:** List of chunk objects with content, metadata, score, and download URLs.
+
+
+### 4.2 Retrieve Relevant Documents
+
+**POST** `/retrieve/docs`
+
+Similar to chunks retrieval but returns document-level matches.
+
+### 4.3 List Documents
+
+**POST** `/documents`
+
+List accessible documents with optional pagination and filtering.
+
+**Parameters:**
+- `skip` (int): number of documents to skip.
+- `limit` (int): max number to return.
+- `filters` (object): metadata filters.
+- `folder_name(s)` (string or array): scope by folder.
+
+**Response:** List of document metadata including ID, filename, and metadata.
+
+---
+
+## 5. Document Updates and Management
+
+### 5.1 Update Document with Text
+
+**POST** `/documents/{document_id}/update_text`
+
+Add or update document content with new text.
+
+**Parameters:**
+- content: new text content
+- filename: optional new filename
+- metadata: additional metadata
+- rules: rules to apply
+- update_strategy: currently supports "add" to append
+- use_colpali: embedding model choice
+
+### 5.2 Update Document with File
+
+**POST** `/documents/{document_id}/update_file`
+
+Update document with content from a new file upload.
+
+### 5.3 Update Document Metadata Only
+
+**POST** `/documents/{document_id}/update_metadata`
+
+Replace or add document metadata without changing content.
+
+### 5.4 Delete Document
+
+**DELETE** `/documents/{document_id}`
+
+Deletes document and all associated chunks, embeddings, and metadata.
+
+### 5.5 Work with Documents by Filename
+
+Convenience endpoints allow getting, updating, or deleting documents by filename.
+
+- **GET** `/documents/filename/{filename}`: retrieve metadata
+- Update/delete operations first resolve filename then act by document ID
+
+---
+
+## 6. Batch Operations
+
+### 6.1 Batch Get Documents
+
+**POST** `/batch/documents`
+
+Retrieve multiple documents metadata by a list of document IDs.
+
+### 6.2 Batch Get Chunks
+
+**POST** `/batch/chunks`
+
+Retrieve specific chunks from documents by document IDs and chunk numbers.
+
+---
+
+## 7. Advanced Search and Query
+
+### 7.1 Query Endpoint for RAG (Retrieval-Augmented Generation)
+
+**POST** `/query`
+
+Submit a natural language query to generate a completion using relevant chunks as context.
+
+Supports:
+- filtering
+- multi-folder scoping
+- configurable number of chunks
+- knowledge graph-enhanced retrieval via graph_name and hop_depth
+- including graph relationship paths
+- custom prompt overrides for entity extraction, resolution, and query formatting
+- structured output via Pydantic models or JSON schemas
+- LLM configuration
+
+**Example usage (Python async):**
+
+```python
+response = await db.query(
+    "What are the key findings about customer satisfaction?",
+    filters={"department": "research"},
+    temperature=0.7
+)
+print(response.completion)
+```
+
+**Structured Output Example:**
+
+```python
+from pydantic import BaseModel
+
+class Findings(BaseModel):
+    main_point: str
+    supporting_points: list[str]
+
+response = await db.query(
+    "Summarize customer satisfaction findings",
+    schema=Findings
+)
+print(response.completion.main_point)
+```
+
+---
+
+## 8. Folder and User Scoping
+
+Morphik supports scoped operations within folders and for specific users to isolate document sets.
+
+- Create folders to organize documents.
+- Ingest, retrieve, query documents scoped to a folder.
+- Sign in as an end user to scope operations for user-specific documents.
+- Combine folder + user scoping.
+
+This is essential for multi-tenant setups or data segmentation.
+
+---
+
+## 9. Tips, Best Practices & Common Pitfalls
+
+- **Use `use_colpali=true` for highest retrieval quality** especially on multimodal documents.
+- **Apply ingestion rules** to automate metadata extraction and content enrichment.
+- **Batch uploads** improve performance when ingesting many files.
+- **Monitor document processing status** to ensure ingestion is complete before querying.
+- Use **structured query responses** with Pydantic models for reliable downstream integrations.
+- When updating documents, prefer **additive 'add' strategy** to preserve existing content and metadata.
+- Always handle **errors and status codes** returned by endpoints.
+- Use folder and user scoping to **enforce access control** and data isolation.
+
+---
+
+## 10. Troubleshooting
+
+**Common Issues:**
+
+- Upload failures: Check file size limits and supported formats.
+- Missing metadata extraction: Verify rules syntax and schema correctness.
+- Empty search results: Ensure data is ingested with `use_colpali=true` and filters match.
+- Slow ingestion: Use batch ingestion and monitor status.
+- Access denied: Verify authentication token and folder/user scoping.
+
+Refer to the [Troubleshooting Guide](https://morphik.ai/docs/getting-started/troubleshooting-help/common-install-issues) and community support for help.
+
+---
+
+## 11. Code Examples
+
+### Python SDK Ingestion Examples
+
+```python
+from morphik.async_ import AsyncMorphik
+
+async def main():
+    async with AsyncMorphik("morphik://owner:token@api.morphik.ai") as db:
+        # Ingest a text document
+        doc = await db.ingest_text(
+            "This is a sample document content.",
+            filename="sample.txt",
+            metadata={"category": "test"},
+            rules=None,
+            use_colpali=True
+        )
+
+        # Check if processed
+        await db.wait_for_document_completion(doc.external_id)
+
+        # Query for relevant chunks
+        chunks = await db.retrieve_chunks(
+            query="What is the main topic?",
+            filters={"category": "test"},
+            k=3
+        )
+
+        # Run a RAG query
+        response = await db.query(query="Summarize the document.", filters={"category": "test"})
+        print(response.completion)
+
+import asyncio
+asyncio.run(main())
+```
+
+### Retrieving Documents by ID
+
+```python
+# Get document metadata
+doc = await db.get_document("doc_123abc")
+print(doc.filename, doc.metadata)
+```
+
+### Batch Retrieval
+
+```python
+documents = await db.batch_get_documents(["doc1", "doc2"])
+for d in documents:
+    print(d.external_id, d.filename)
+```
+
+---
+
+## 12. Endpoint Summary Table
+
+| Endpoint                         | Method | Summary                                  |
+|---------------------------------|--------|------------------------------------------|
+| `/ingest/text`                  | POST   | Ingest a text document                   |
+| `/ingest/file`                  | POST   | Ingest a file document                   |
+| `/ingest/files`                 | POST   | Ingest multiple files                    |
+| `/retrieve/chunks`              | POST   | Retrieve relevant chunks                 |
+| `/retrieve/docs`                | POST   | Retrieve relevant documents              |
+| `/documents`                   | POST   | List documents                           |
+| `/documents/{document_id}`      | GET    | Get document metadata                    |
+| `/documents/{document_id}/update_text`| POST | Update document with text             |
+| `/documents/{document_id}/update_file`| POST | Update document with file             |
+| `/documents/{document_id}/update_metadata`| POST | Update metadata                     |
+| `/documents/{document_id}`      | DELETE | Delete a document                        |
+| `/documents/filename/{filename}`| GET    | Get document by filename                 |
+| `/batch/documents`              | POST   | Batch retrieve documents by IDs          |
+| `/batch/chunks`                 | POST   | Batch retrieve chunks                    |
+| `/query`                       | POST   | Execute a retrieval-augmented query     |
+
+---
+
+## 13. Additional Resources
+
+- [Morphik Console, Python SDK & API Overview](https://morphik.ai/docs/overview/feature-overview/console-sdk-api)
+- [Document Ingestion Guide](https://morphik.ai/docs/guides/core-workflows/ingest-documents)
+- [Multimodal Search & Retrieval Guide](https://morphik.ai/docs/guides/core-workflows/multimodal-search)
+- [Metadata Extraction Rules](https://morphik.ai/docs/guides/core-workflows/extract-metadata)
+- [Knowledge Graph API](https://morphik.ai/docs/api-reference/api-endpoints/knowledge-graphs-api)
+- [SDK Usage Examples](https://morphik.ai/docs/sdks/core-workflows/search-query)
+
+---
