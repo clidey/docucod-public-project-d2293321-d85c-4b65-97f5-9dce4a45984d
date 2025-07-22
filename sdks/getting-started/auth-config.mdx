@@ -3,4 +3,268 @@ title: "Authentication & Configuration"
 description: "How to securely configure Morphik SDKs using credentials, project URIs, or environments. Explains authentication flows, required arguments, and how to troubleshoot permissions issues."
 ---
 
-*This page will automatically be generated from the codebase*
+# Authentication & Configuration
+
+Securely configuring the Morphik SDKs is foundational to unlocking the platform’s full capabilities. This guide walks you through the authentication flows, how to configure your SDK clients with credentials, project URIs, or environment variables, and how to resolve common permissions issues.
+
+---
+
+## Understanding Morphik Authentication
+
+Morphik uses JWT (JSON Web Tokens) to securely authenticate and authorize API requests. Each token contains metadata that identifies the user or developer, associated project or app, and permissions scope.
+
+### Key Concepts
+
+- **Entity Types**: The primary actors are either a `user` or a `developer`.
+- **Entity ID**: A unique identifier (UUID or username) representing the authenticated entity.
+- **App ID**: The project or application identifier (UUID) scoped to developers.
+- **Permissions**: A set of permissions such as `read`, `write`, or `admin` that control access.
+
+The authentication context, represented internally by the class `AuthContext`, holds these fields decoded from the JWT token, enabling fine-grained access control.
+
+<CodeGroup>
+```python
+from core.models.auth import AuthContext, EntityType
+
+class AuthContext(BaseModel):
+    entity_type: EntityType
+    entity_id: str  # uuid
+    app_id: Optional[str] = None  # uuid, only for developers
+    permissions: Set[str] = {"read"}
+    user_id: Optional[str] = None  # ID of the user who owns the app/entity
+```
+</CodeGroup>
+
+## Authentication Flows
+
+### 1. Development Mode (Dev Shortcut)
+
+Morphik supports a **dev_mode** which bypasses cryptographic checks for quick local development. When active, an `AuthContext` with permissive access is created automatically.
+
+```python
+if settings.dev_mode:
+    return AuthContext(
+        entity_type=EntityType(settings.dev_entity_type),
+        entity_id=settings.dev_entity_id,
+        permissions=set(settings.dev_permissions),
+        user_id=settings.dev_entity_id,  # In dev mode, entity_id == user_id
+    )
+```
+
+This mode is intended strictly for local usage to speed up prototyping and testing. **Never use dev_mode in production.**
+
+### 2. JWT Token Verification (Production)
+
+Tokens must be passed in the HTTP `Authorization` header as `Bearer <token>`.
+
+- The SDK or API server decodes the token using a shared secret key.
+- It validates the token expiry and signature.
+- On success, an `AuthContext` object is constructed from token claims.
+
+If the token is missing, invalid, or expired, the server responds with `401 Unauthorized`.
+
+### 3. Cloud and Local URI Tokens
+
+Morphik supports specialized authenticated connection URIs:
+
+- **Local URI**: For development, you can generate a Morphik URI embedding a temporary developer token signed with your JWT secret.
+- **Cloud URI**: For hosted Morphik, authenticated connection URIs are issued per app and user with limited lifetimes.
+
+These URIs contain the token credentials required by the SDK to authenticate
+
+Example of generating a local URI with expiration:
+
+```python
+payload = {
+    "type": "developer",
+    "entity_id": name,
+    "permissions": ["read", "write", "admin"],
+    "exp": datetime.now(UTC) + timedelta(days=expiry_days),
+}
+token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+uri = f"morphik://{name}:{token}@{base_url}"
+```
+
+## Configuring the SDK for Authentication
+
+### Using Connection URI
+
+The simplest way to authenticate with Morphik SDKs is via a Morphik connection URI, which embeds the credentials:
+
+```python
+from morphik_sdk import MorphikClient
+
+client = MorphikClient(connection_uri="morphik://user:token@host:port")
+```
+
+This URI format securely encapsulates the JWT token and endpoint.
+
+### Environment Variables
+
+Alternatively, you can configure authentication via environment variables:
+
+- `MORPHIK_API_TOKEN`: Your JWT Bearer token
+- `MORPHIK_API_URL`: The URL of your Morphik instance
+
+Example:
+
+```bash
+export MORPHIK_API_TOKEN="<your-token>"
+export MORPHIK_API_URL="https://api.morphik.ai"
+```
+
+The SDK automatically picks up these environment variables if they are set.
+
+### Explicit Token and Endpoint Parameters
+
+You may also specify token and API endpoint directly when initializing the client:
+
+```python
+client = MorphikClient(api_url="https://api.morphik.ai", api_token="<your-token>")
+```
+
+## Authentication in API Requests
+
+All API requests must carry the `Authorization: Bearer <token>` header. The SDK handles injection of this header automatically if configured.
+
+When the server receives a request, it calls the `verify_token` dependency to:
+
+- Decode and validate the token
+- Extract and construct the `AuthContext`
+- Apply scoping enhancements, like swapping databases or vector stores per app for enterprise setups
+
+If token validation fails, the request is rejected with appropriate HTTP status codes.
+
+## Managing Permissions
+
+The authenticated token includes a **permissions** set controlling what the caller can perform. Common permissions:
+
+- `read`: Can read documents, graphs, etc.
+- `write`: Can modify or upload content
+- `admin`: Full control including deletes and configuration
+
+The API enforces these permissions rigorously.
+
+### Troubleshooting Permissions Issues
+
+- Ensure your token includes necessary permissions.
+- Confirm that the token’s `app_id` matches the requested resources’ app scope.
+- Developer tokens scoped to an app require both `app_id` and entity access.
+- Use the `/usage/stats` endpoint to verify your permissions and usage.
+
+## Common Troubleshooting Tips
+
+- **401 Unauthorized errors** usually mean:
+  - Missing or malformed `Authorization` header.
+  - Expired token.
+  - Invalid token signature.
+
+- **403 Forbidden errors** indicate insufficient permissions for the operation.
+
+- **Token expiration** can be checked by decoding your JWT token payload.
+
+- Use development mode only in local setups. Avoid exposing dev tokens in production.
+
+## Summary Diagram of Authentication Flow
+
+```mermaid
+sequenceDiagram
+    participant SDK as Morphik SDK
+    participant Server as Morphik API Server
+    participant Auth as JWT Auth Service
+
+    SDK->>Server: API Request with Bearer Token
+    Server->>Auth: Decode & Validate JWT Token
+    alt Token Valid
+        Auth-->>Server: AuthContext
+        Server-->>SDK: Requested Data
+    else Token Invalid
+        Auth-->>Server: Error (Unauthorized)
+        Server-->>SDK: 401 Unauthorized
+    end
+```
+
+## Best Practices for Secure Configuration
+
+- Always use tokens with the least privilege necessary.
+- Do not share or commit tokens in source control.
+- Regularly rotate your tokens and API keys.
+- Use project-scoped tokens (`app_id`) when working with multiple apps.
+- Use environment variables or secure vaults to store tokens.
+- Validate your token’s expiration and permissions before making requests.
+
+## Additional Resources
+
+- [Authentication Overview](https://docs.morphik.ai/api-reference/api-authentication-requests/auth-overview) — Deep dive on Morphik JWT Auth.
+- [SDK Usage & Code Examples](https://docs.morphik.ai/api-reference/api-authentication-requests/sdk-examples) — How to initialize SDK with authentication.
+- [Quotas & Rate Limits](https://docs.morphik.ai/api-reference/api-operations-limits/quota-limits) — Permissions and usage monitoring.
+- [Troubleshooting Installation Problems](https://docs.morphik.ai/getting-started/troubleshooting-help/common-install-issues) — Debug common auth errors.
+
+---
+
+## Frequently Asked Questions
+
+<AccordionGroup title="Authentication & Configuration FAQs">
+<Accordion title="How do I generate a Morphik URI token for local development?">
+Use the `/local/generate_uri` API endpoint. Provide your developer name and token expiration days. The URI includes all necessary credentials to connect the SDK to your local Morphik instance.
+</Accordion>
+<Accordion title="What if my token is expired or invalid?">
+You will get a 401 Unauthorized error. Generate a new token or verify your token's payload and expiration date.
+</Accordion>
+<Accordion title="Can I use the SDK without a token in dev_mode?">
+Yes, enabling `dev_mode` in settings bypasses real authentication for local testing only.
+</Accordion>
+<Accordion title="Why am I seeing 403 Permission Denied errors?">
+Your token does not grant sufficient permissions for the requested resource or operation. Ensure your token includes the `read`,`write` or `admin` permissions as needed.
+</Accordion>
+<Accordion title="How do I switch apps or projects in the SDK configuration?">
+Include the `app_id` either embedded in the URI token or configure it explicitly in your authentication token metadata.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Troubleshooting Tips
+
+<Tip>
+If you encounter authentication errors, verify that your JWT token is:
+- Correctly formatted and signed
+- Not expired
+- Properly scoped with required permissions
+
+Use JWT debugging tools like https://jwt.io to inspect token claims.
+</Tip>
+
+<Warning>
+Never share your JWT secret key or private tokens.
+Keep all credentials secure and rotate regularly.
+</Warning>
+
+<Note>
+In enterprise deployments, tokens may route to app-specific databases or vector stores.
+Always use tokens generated for your specific app/project scope.
+</Note>
+
+---
+
+## Quick Example: Initialize SDK with Auth URI
+
+```python
+from morphik_sdk import MorphikClient
+
+# Morphik URI embeds username and token
+connection_uri = "morphik://developer:eyJhbGciOi...@api.morphik.ai:443"
+client = MorphikClient(connection_uri=connection_uri)
+
+# Use the client for API calls
+response = client.query("What is Morphik?")
+print(response.completion)
+```
+
+---
+
+## Summary
+
+Secure configuration and authentication is central to successful Morphik SDK usage. By leveraging JWT tokens embedded in URIs or environment variables, the SDK authenticates transparently, enabling secure and scoped access to projects and APIs. Keep tokens valid, scoped, and protected to avoid common pitfalls and ensure smooth operations.
+
+---
