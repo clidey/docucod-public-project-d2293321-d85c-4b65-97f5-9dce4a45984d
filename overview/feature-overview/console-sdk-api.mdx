@@ -3,4 +3,195 @@ title: "Console, Python SDK & API Options"
 description: "Introduce the three primary ways to interact with Morphik—web console, Python SDK, and REST API. Clearly outline their respective strengths and the user flows they support, from manual document uploading to programmatic, large-scale integrations."
 ---
 
-*This page will automatically be generated from the codebase*
+# Console, Python SDK & API Options
+
+Explore the three primary ways to interact with Morphik — via the **Morphik Console**, the **Python SDK**, and the **REST API**. Each method caters to different user preferences and workflows, from ad-hoc explorations and manual document uploads to programmatic, large-scale ingestion and integration scenarios.
+
+---
+
+## Why Choosing the Right Interface Matters
+
+Imagine you are a developer aiming to harness powerful AI-driven insights from complex documents. You want to store, search, and query diverse data effortlessly. Morphik provides the flexibility for you to engage at your comfort level — whether you prefer an intuitive web interface, seamless Python code integration, or direct API calls for full automation.
+
+Understanding each option empowers you to scale your solution efficiently, moving from experimentation to production-ready workflows without friction.
+
+---
+
+## Morphik Console: Intuitive Web Interface for Rapid Interaction
+
+The **Morphik Console** is your web-based control center for all Morphik operations. It offers a user-friendly graphical interface to:
+- Upload documents manually (PDFs, images, text files, videos, and more).
+- Manage folders and organize your data visually.
+- Conduct semantic searches and interact via chat-style queries.
+- View ingestion status and metadata without coding.
+
+### User Flow Example:
+1. Log in to the Console.
+2. Upload your documents via drag-and-drop or file selector.
+3. Wait briefly while Morphik processes and indexes your data.
+4. Search or chat with your documents to extract insights.
+
+### When to Use the Console
+- When you prefer no-code or low-code interaction.
+- For quick experiments with small datasets.
+- Collaborating in teams without programming overhead.
+- Monitoring and managing data ingestion status visually.
+
+<Callout>
+**Tip:** The Console is the perfect starting point to familiarize yourself with your data in Morphik before automating ingestion using SDK or API.
+</Callout>
+
+---
+
+## Python SDK: Seamless, Developer-Friendly Integration
+
+Morphik’s **Python SDK** offers a powerful yet simple client library for programmatic access to all Morphik features, including document ingestion, retrieval, and query.
+
+### Key Capabilities
+- Ingest text documents or files directly from your Python applications.
+- Create and manage folders and user scopes programmatically.
+- Perform semantic search and Retrieval-Augmented Generation (RAG) queries.
+- Batch processing with parallel ingestion support.
+- Both synchronous and asynchronous clients available for your preferred coding style.
+
+### Example: Ingesting and Querying Documents
+```python
+from morphik import Morphik
+
+# Initialize Morphik client (default localhost:8000 or your endpoint URI)
+db = Morphik()
+
+# Ingest a text document
+doc = db.ingest_text(
+    content="Morphik is an AI-native platform for multimodal document understanding.",
+    filename="intro.txt",
+    metadata={"category": "example"}
+)
+print(f"Document ID: {doc.external_id}")
+
+# Query the ingested data
+response = db.query("What is Morphik used for?", filters={"category": "example"})
+print("Query result:", response.completion)
+```
+
+### Asynchronous Usage
+The SDK also supports async programming for high-throughput or I/O-bound applications:
+
+```python
+import asyncio
+from morphik.async_ import AsyncMorphik
+
+async def main():
+    async with AsyncMorphik() as db:
+        doc = await db.ingest_text(content="Async ingestion example", filename="async.txt")
+        response = await db.query("Summarize async client")
+        print(response.completion)
+
+asyncio.run(main())
+```
+
+### When to Use the Python SDK
+- Integrate Morphik into your Python apps and workflows.
+- Automate ingestion and querying in pipelines.
+- Utilize both sync and async paradigms depending on your architecture.
+- Leverage advanced features like folder and user scoping.
+
+<Callout>
+**Best Practice:** Use the SDK to batch process large datasets and leverage parallel ingestion capabilities for efficiency.
+</Callout>
+
+---
+
+## REST API: Flexible Programmatic Access for Any Environment
+
+For full control and language-independent integration, Morphik exposes a well-documented **REST API**. This API enables:
+- Document ingestion by uploading files or text payloads.
+- Managing resources such as folders and user scopes.
+- Performing semantic search and retrieval-augmented generation queries.
+
+### Use Cases
+- Integrating Morphik with services or platforms where Python SDK is not available.
+- Building custom clients in any programming language.
+- Embedding Morphik functionalities into backend services, web apps, or automation scripts.
+
+### Example: Simple REST API Request to Ingest a Document
+```bash
+curl -X POST "https://api.morphik.ai/documents/ingest" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@/path/to/document.pdf" \
+  -F "metadata={\"category\":\"reports\"}" \
+  -H "Content-Type: multipart/form-data"
+```
+
+### When to Use the REST API
+- When working outside of Python environments.
+- For building custom integrations tailored to your infrastructure.
+- For scenarios requiring fine-grained HTTP request control.
+
+<Note>
+Morphik SDK internally uses this API; therefore, all SDK features are available through the REST endpoints.
+</Note>
+
+---
+
+## Choosing the Right Interaction Method
+
+| Interface       | Best For                                        | Strengths                             |
+|-----------------|------------------------------------------------|-------------------------------------|
+| Morphik Console | Manual uploads and exploration                  | Intuitive UI, quick insights         |
+| Python SDK      | Application integration, automation             | Developer-friendly, sync & async     |
+| REST API        | Language-agnostic, custom client construction   | Maximum flexibility, direct control  |
+
+---
+
+## Summary of User Flows Supported
+
+- **Manual Document Upload:** Use the Morphik Console to drag-and-drop files and manage them visually.
+- **Scripted Ingestion and Queries:** Use the Python SDK to integrate ingestion, folder management, and queries into your application workflows.
+- **Programmatic Large-Scale Integration:** Use the REST API when needing to connect Morphik with existing infrastructure or non-Python stacks.
+
+---
+
+## Getting Started
+
+You can quickly get up and running with any option:
+
+- **Console:** Sign up at [Morphik Signup](https://www.morphik.ai/signup), and start uploading your documents right away.
+- **Python SDK:** Install via `pip install morphik`. Refer to the [Python SDK README](https://morphik.ai/docs/sdks/python/README.md) for usage examples and installation steps.
+- **REST API:** Obtain an API key via the web dashboard or your self-hosted setup, then follow the [API Reference](https://morphik.ai/docs/api-reference) for detailed endpoint documentation.
+
+---
+
+## Troubleshooting Common Issues
+
+<AccordionGroup title="Troubleshooting Interaction Methods">
+<Accordion title="Console Upload Failures">
+- Ensure your file size is within allowed limits.
+- Verify your internet connection and try refreshing.
+- Check the document processing status for delayed ingestion.
+</Accordion>
+<Accordion title="Python SDK Connection Errors">
+- Confirm the Morphik URI is correct and accessible.
+- Check authentication tokens or environment variables (e.g., `MORPHIK_URI`).
+- Use synchronous or asynchronous client methods appropriately.
+</Accordion>
+<Accordion title="REST API Request Failures">
+- Validate your API key and authorization header.
+- Confirm endpoint URLs and HTTP method.
+- Review error responses for rate limits or malformed requests.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Additional Resources
+
+- [Morphik Console Guide](https://morphik.ai/docs/getting-started/first-steps-and-validation/using-the-morphik-console)
+- [Python SDK Documentation](https://morphik.ai/docs/sdks/python/README.md)
+- [REST API Reference](https://morphik.ai/docs/api-reference)
+- [Quick Start Guide](https://morphik.ai/docs/overview/feature-overview/quickstart)
+- [Integration Landscape](https://morphik.ai/docs/overview/architecture-core-concepts/integration-points)
+
+---
+
+Harness Morphik through the interface that best fits your workflow — from hands-on exploration in the Console, coding with the Python SDK, to custom integrations via the API. This flexibility ensures Morphik can power your AI applications efficiently, whatever your scale or environment.
