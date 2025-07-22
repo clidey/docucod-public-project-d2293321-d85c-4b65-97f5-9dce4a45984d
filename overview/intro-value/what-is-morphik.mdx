@@ -3,4 +3,104 @@ title: "What is Morphik?"
 description: "Morphik is an AI-native toolset built to help developers easily ingest, search, analyze, and retrieve information from complex, multimodal, and visually rich documents. It is designed to eliminate brittle, piecemeal AI data stacks by providing unified APIs and workflows that deeply understand text, images, tables, diagrams, and more—delivering production-quality results where standard RAG approaches fail."
 ---
 
-*This page will automatically be generated from the codebase*
+# What is Morphik?
+
+Morphik is an AI-native toolset built to help developers easily ingest, search, analyze, and retrieve information from complex, multimodal, and visually rich documents. It is designed to eliminate brittle, piecemeal AI data stacks by providing unified APIs and workflows that deeply understand text, images, tables, diagrams, and more—delivering production-quality results where standard Retrieval-Augmented Generation (RAG) approaches fail.
+
+---
+
+## Understanding Morphik’s Core Purpose
+
+Standard AI pipelines often require stitching together multiple tools—OCR engines, vector databases, embedding models, and retrieval systems—introducing fragile connections and failure points. Morphik was created to solve these persistent challenges by offering an integrated platform that handles multimodal and unstructured data seamlessly.
+
+Whether your data is richer than plain text or embedded in complex layouts, Morphik understands and preserves visual and spatial context. This leads to much better AI comprehension and dramatically higher accuracy in answering questions, extracting insights, and generating meaningful responses.
+
+
+## Why Morphik Matters to You
+
+Imagine you are building an AI application that needs to process a 500-page product manual full of diagrams, tables, and images. Traditional systems might treat that manual as just a collection of disjointed text snippets—losing critical information in the visuals, spatial relations, and formatting. You risk incorrect answers, missed details, and increased infrastructure costs because your LLM repeatedly ingests the entire document.
+
+Morphik transforms this experience by:
+
+- **Preserving Visual Context:** Images, tables, and diagrams remain meaningful components in your data pipeline, not broken fragments.
+- **Unified Ingestion & Search:** Single APIs let you ingest complex files and then query them deeply using advanced multimodal search techniques.
+- **Speed & Scalability:** Its optimized systems dramatically reduce query times and computational overhead.
+
+## What Can You Do with Morphik?
+
+Morphik offers an end-to-end toolset tailored specifically for developers tackling multimodal unstructured data:
+
+- **Ingest Documents:** Upload PDFs, images, videos, and text-rich files with ease through the SDK or console.
+  ```python
+  from morphik import Morphik
+  db = Morphik("<your-morphik-uri>")
+  doc = db.ingest_file("path/to/your/file.pdf")
+  ```
+
+- **Perform Deep Multimodal Search:** Search across all content types—text, visuals, tables—using a single query.
+
+- **Create Knowledge Graphs:** Extract entities and relationships with a single API call to build domain-specific graphs for richer insights.
+
+- **Apply Metadata Extraction Rules:** Customize extraction with rules to label, classify, and segment data for better retrieval.
+
+- **Use Cache-Augmented Generation:** Speed up completions by caching document information for instant AI responses.
+
+- **Integrate Seamlessly:** Connect Morphik to tools like Google Suite, Slack, and Confluence to bring your AI workflows together.
+
+## A Glimpse of Morphik’s Technology Benefits
+
+| Benefit                        | What It Means For You                              |
+|-------------------------------|---------------------------------------------------|
+| **Faster Queries**             | 70-80% improvement on complex searches            |
+| **Robust Pipelines**           | Fewer points of failure with unified APIs          |
+| **Visual-Aware Understanding**| No more losing meaning in charts or diagrams        |
+| **Scalable Architecture**     | Supports both small projects and enterprise scale  |
+| **Developer Productivity**     | Simple SDK calls with intuitive abstractions       |
+
+## How Morphik Fits Into Your AI Stack
+
+Instead of stitching together multiple systems:
+
+- **You use Morphik to ingest your documents once.**
+- **You use powerful queries that incorporate text and images at once.**
+- **You build extra layers like knowledge graphs automatically to enhance contextual understanding.**
+
+By reducing your integration overhead, Morphik lets your team focus on building AI experiences, not plumbing.
+
+---
+
+## Ready to Get Started?
+
+Morphik supports multiple ways to interact:
+
+- **Use the Python SDK** to programmatically ingest and query data.
+- **Use the Morphik Console** for no-code bulk ingestion and query.
+- **Build with the REST API** for custom integrations.
+
+Morphik also offers a [free tier](https://www.morphik.ai/pricing) so you can start without upfront costs.
+
+For example, ingest text and query with the Python SDK:
+
+```python
+from morphik import Morphik
+
+db = Morphik("morphik://owner_id:token@api.morphik.ai")
+
+doc = db.ingest_text("Machine learning is fascinating and complex.", metadata={"category": "tech"})
+
+response = db.query("What are the main points about machine learning?")
+print(response.completion)
+```
+
+Explore detailed guides and examples in the Morphik documentation to unlock the full potential of your data.
+
+---
+
+## Learn More
+
+- Visit the [Morphik Website](https://morphik.ai) to explore use cases and start your account.
+- Check out the [SDK documentation](https://morphik.ai/docs/sdks/python) to dive deeper.
+- Refer to other overview pages such as [Why Choose Morphik?](https://morphik.ai/docs/overview/intro-value/why-morphik) and [Key Features at a Glance](https://morphik.ai/docs/overview/intro-value/product-highlights).
+- Join the community on [Discord](https://discord.gg/BwMtv3Zaju) for support and updates.
+
+Morphik is your unified platform for turning rich, complex documents into actionable AI intelligence—start transforming your data workflows today.
