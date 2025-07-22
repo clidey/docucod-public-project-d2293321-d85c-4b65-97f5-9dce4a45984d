@@ -1,0 +1,258 @@
+{
+  "background": {
+    "decoration": "gradient"
+  },
+  "colors": {
+    "dark": "#1E3A8A",
+    "light": "#60A5FA",
+    "primary": "#60A5FA"
+  },
+  "favicon": "/favicon.svg",
+  "fonts": {
+    "family": "Montserrat",
+    "format": "woff2",
+    "source": "https://fonts.gstatic.com/s/googlesansflex/v5/t5sJIQcYNIWbFgDgAAzZ34auoVyXkJCOvp3SFWJbN5hF8Ju1x6sKCyp0l9sI40swNJwGpVd4AZzz0v6lJ4qFXNZhGjLvDSkV4USKMo6qQzwliVdHAy9jxTDHg_ugnAakpwGc-cxgUqDCIUI.woff2"
+  },
+  "icons": {
+    "library": "fontawesome"
+  },
+  "logo": {
+    "dark": "./logo/logo.png",
+    "light": "./logo/logo.png"
+  },
+  "name": "Morphik",
+  "navigation": {
+    "tabs": [
+      {
+        "groups": [
+          {
+            "group": "Introduction \u0026 Value Proposition",
+            "pages": [
+              "overview/intro-value/what-is-morphik",
+              "overview/intro-value/why-morphik",
+              "overview/intro-value/product-highlights",
+              "overview/intro-value/audience-use-cases"
+            ]
+          },
+          {
+            "group": "Architecture \u0026 Core Concepts",
+            "pages": [
+              "overview/architecture-core-concepts/system-architecture",
+              "overview/architecture-core-concepts/core-concepts",
+              "overview/architecture-core-concepts/integration-points"
+            ]
+          },
+          {
+            "group": "Feature Overview \u0026 Quick Start",
+            "pages": [
+              "overview/feature-overview/quickstart",
+              "overview/feature-overview/console-sdk-api",
+              "overview/feature-overview/feature-tour"
+            ]
+          }
+        ],
+        "tab": "Overview"
+      },
+      {
+        "groups": [
+          {
+            "group": "Introduction \u0026 Prerequisites",
+            "pages": [
+              "getting-started/introduction-and-prerequisites/what-is-morphik",
+              "getting-started/introduction-and-prerequisites/system-requirements"
+            ]
+          },
+          {
+            "group": "Installation \u0026 Configuration",
+            "pages": [
+              "getting-started/install-configure-morphik/cloud-signup",
+              "getting-started/install-configure-morphik/install-python-sdk",
+              "getting-started/install-configure-morphik/self-hosting-guide",
+              "getting-started/install-configure-morphik/configuration-basics",
+              "getting-started/install-configure-morphik/auth-migration-steps"
+            ]
+          },
+          {
+            "group": "First Run \u0026 Quick Validation",
+            "pages": [
+              "getting-started/first-steps-and-validation/run-first-sdk-query",
+              "getting-started/first-steps-and-validation/using-the-morphik-console",
+              "getting-started/first-steps-and-validation/validation-and-health-checks"
+            ]
+          },
+          {
+            "group": "Troubleshooting \u0026 Support",
+            "pages": [
+              "getting-started/troubleshooting-help/common-install-issues",
+              "getting-started/troubleshooting-help/getting-community-support"
+            ]
+          }
+        ],
+        "tab": "Getting Started"
+      },
+      {
+        "groups": [
+          {
+            "group": "Core Workflows",
+            "pages": [
+              "guides/core-workflows/ingest-documents",
+              "guides/core-workflows/multimodal-search",
+              "guides/core-workflows/extract-metadata",
+              "guides/core-workflows/chat-with-your-data"
+            ]
+          },
+          {
+            "group": "Knowledge Graphs \u0026 Insights",
+            "pages": [
+              "guides/knowledge-graphs/build-knowledge-graph",
+              "guides/knowledge-graphs/query-graph",
+              "guides/knowledge-graphs/advanced-graph-operations"
+            ]
+          },
+          {
+            "group": "Integrations \u0026 Optimization",
+            "pages": [
+              "guides/integrations-and-caching/cache-augmentation",
+              "guides/integrations-and-caching/tool-integrations",
+              "guides/integrations-and-caching/optimizing-performance"
+            ]
+          }
+        ],
+        "tab": "Guides"
+      },
+      {
+        "groups": [
+          {
+            "group": "Core API Endpoints",
+            "pages": [
+              "api-reference/api-endpoints/documents-api",
+              "api-reference/api-endpoints/knowledge-graphs-api",
+              "api-reference/api-endpoints/workflows-api",
+              "api-reference/api-endpoints/cache-api"
+            ]
+          },
+          {
+            "group": "Authentication \u0026 Request Patterns",
+            "pages": [
+              "api-reference/api-authentication-requests/auth-overview",
+              "api-reference/api-authentication-requests/request-structure",
+              "api-reference/api-authentication-requests/sdk-examples"
+            ]
+          },
+          {
+            "group": "Quotas, Rate Limits \u0026 Error Handling",
+            "pages": [
+              "api-reference/api-operations-limits/quota-limits",
+              "api-reference/api-operations-limits/error-handling"
+            ]
+          }
+        ],
+        "tab": "API Reference"
+      },
+      {
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "sdks/getting-started/install-sdk",
+              "sdks/getting-started/auth-config",
+              "sdks/getting-started/first-ingestion"
+            ]
+          },
+          {
+            "group": "Core Workflows \u0026 Use Cases",
+            "pages": [
+              "sdks/core-workflows/search-query",
+              "sdks/core-workflows/knowledge-graphs",
+              "sdks/core-workflows/extraction-transformation",
+              "sdks/core-workflows/workflow-examples"
+            ]
+          },
+          {
+            "group": "Advanced Usage \u0026 Best Practices",
+            "pages": [
+              "sdks/advanced-usage/sync-async-patterns",
+              "sdks/advanced-usage/error-handling",
+              "sdks/advanced-usage/performance-tips"
+            ]
+          }
+        ],
+        "tab": "SDKs"
+      },
+      {
+        "groups": [
+          {
+            "group": "Core System Architecture",
+            "pages": [
+              "concepts/core-architecture/system-overview",
+              "concepts/core-architecture/data-flow",
+              "concepts/core-architecture/extending-system"
+            ]
+          },
+          {
+            "group": "Data Models \u0026 Schemas",
+            "pages": [
+              "concepts/data-models/document-schema",
+              "concepts/data-models/embedding-models",
+              "concepts/data-models/graphs-and-workflows"
+            ]
+          },
+          {
+            "group": "Security \u0026 Permissions",
+            "pages": [
+              "concepts/security/auth-model",
+              "concepts/security/permissions-tenancy"
+            ]
+          },
+          {
+            "group": "Scalability \u0026 Integration Patterns",
+            "pages": [
+              "concepts/scalability-integration/scalability-performance",
+              "concepts/scalability-integration/integration-patterns"
+            ]
+          }
+        ],
+        "tab": "Concepts"
+      },
+      {
+        "groups": [
+          {
+            "group": "Production Deployment",
+            "pages": [
+              "deployment/production-deployment/deployment-options",
+              "deployment/production-deployment/step-by-step-setup",
+              "deployment/production-deployment/migrating-existing-installations"
+            ]
+          },
+          {
+            "group": "Environment Configuration",
+            "pages": [
+              "deployment/environment-configuration/configuring-morphik",
+              "deployment/environment-configuration/external-integrations"
+            ]
+          },
+          {
+            "group": "Operations and Observability",
+            "pages": [
+              "deployment/operations-and-observability/monitoring-and-logging",
+              "deployment/operations-and-observability/scaling-strategies",
+              "deployment/operations-and-observability/backup-and-disaster-recovery"
+            ]
+          },
+          {
+            "group": "Security and Hardening",
+            "pages": [
+              "deployment/security-and-hardening/authentication-and-access-control",
+              "deployment/security-and-hardening/secrets-and-network-security"
+            ]
+          }
+        ],
+        "tab": "Deployment"
+      }
+    ]
+  },
+  "styling": {
+    "codeblocks": "dark",
+    "eyebrows": "breadcrumbs"
+  }
+}
