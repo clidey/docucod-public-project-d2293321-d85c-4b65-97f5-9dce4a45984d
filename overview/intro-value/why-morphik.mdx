@@ -3,4 +3,152 @@ title: "Why Choose Morphik?"
 description: "Explore Morphik's unique value in simplifying and strengthening AI applications. See how Morphik addresses the limitations of traditional solutions—such as loss of visual context, fragile pipelines, and costly reprocessing—by allowing seamless, robust multimodal search, knowledge graph creation, fast metadata extraction, and persistent caching, all through unified endpoints and SDKs."
 ---
 
-*This page will automatically be generated from the codebase*
+# Why Choose Morphik?
+
+Discover how Morphik empowers you to overcome the persistent challenges of building AI applications that work with complex, multimodal, and visually rich data. This page unwraps Morphik’s breakthrough solutions that replace fragile, costly, and inaccurate pipelines with a unified, robust platform designed to accelerate your AI projects and improve their real-world reliability.
+
+---
+
+## Unlocking True Multimodal Understanding
+
+Traditional AI solutions struggle with visually rich documents and mixed data types. Imagine processing a technical manual where critical diagrams, charts, and images get reduced to meaningless text fragments. Conventional pipelines just strip away the spatial layout and visual cues, causing your AI to misunderstand or miss vital details.
+
+Morphik’s unique multimodal ingestion and search capabilities preserve and leverage all content—text, images, tables, even video frames. This means your queries really *understand* the document context, delivering precise answers where others fail. 
+
+**Value:**
+- Retain visual context to capture meaning lost in plain text extraction
+- Use a single platform to search across PDFs, images, videos seamlessly
+- Improve AI accuracy by feeding spatial and visual document relationships into models
+
+
+## Simplified, Stable, and Unified Architecture
+
+Building AI apps with traditional tools means gluing together a dozen different components — OCR tools, vector databases, embedding services, retrieval logic — each with its own API, scaling behavior, and failure modes. This complexity creates fragile pipelines that break in production and balloon infrastructure costs.
+
+Morphik replaces this patchwork with a unified architecture. From ingestion to advanced retrieval and generation, it offers single endpoints and integrated SDKs for all your workflows. The result:
+
+- **Robustness:** Fewer moving parts, less error handling, higher uptime
+- **Simplicity:** One platform, one set of tools, one place to optimize
+- **Performance:** Optimal pipeline, caching, and metadata processing reduce redundant work and accelerate queries
+
+
+## Fast Metadata Extraction & Domain-Specific Intelligence
+
+Metadata drives smarter search and higher quality results. Morphik’s builtin rules engine and AI models rapidly extract detailed metadata including:
+
+- Bounding boxes
+- Logical blocks like sections, clauses, tables
+- Labels and classifications tailored to your domain
+
+Leverage these rich annotations to create precise filters, build domain-specific knowledge graphs, or trigger workflows — all without manually coding complex parsing logic.
+
+**Benefits:**
+- Automate metadata extraction with system prompts and AI
+- Build rich knowledge graphs with minimal effort
+- Get improved recall and precision when querying
+
+
+## Persistent Cache & Cost-Effective Deployment
+
+Large LLM queries repeated over the same documents waste costly compute cycles and increase latency. Morphik’s cache-augmented generation stores persistent key-value mappings of your document knowledge. This means:
+
+- Instant recall of previously computed results
+- Faster query responses
+- Lower operational costs by avoiding repeated heavy LLM processing
+
+
+## Robust SDKs and Unified Developer Experience
+
+Morphik offers well-designed SDKs — including a robust Python client — and REST APIs that integrate key capabilities with intuitive methods such as `ingest_file()`, `retrieve_chunks()`, and `query()`. Developers can programmatically ingest, query, build knowledge graphs, or manage data scopes in a consistent, seamless workflow.
+
+
+### Example: Ingest a File and Query
+
+```python
+from morphik import Morphik
+
+# Initialize client with authentication
+morphik = Morphik("morphik://owner_id:token@api.morphik.ai")
+
+# Ingest a complex PDF document
+doc = morphik.ingest_file("path/to/manual.pdf", metadata={"category": "tech_manual"})
+
+# Query document content with semantic understanding
+response = morphik.query("What is the torque specification for bolt X?")
+print(response.completion)
+```
+
+
+---
+
+## Why This Matters to You
+
+| Challenge                        | Morphik Benefit                                             | Outcome for You                                           |
+|---------------------------------|-------------------------------------------------------------|-----------------------------------------------------------|
+| Loss of visual context           | Multimodal ingestion and search                              | Accurate answers reflecting complex document layouts      |
+| Fragile multi-component stacks  | Unified architecture and API                                | Higher reliability, easier scaling, less maintenance      |
+| High AI compute costs            | Cache-augmented generation                                 | Cost savings and faster query turnaround                    |
+| Complex metadata extraction      | Built-in rules engine and AI models                         | Rich semantics enabling smarter search and workflows       |
+| Fragmented developer tools       | Consistent SDK and endpoints                                | Smooth integration and faster time-to-value                |
+
+
+## Before Morphik vs. After Morphik
+
+**Before:**
+- Frustrated integrating OCR, vector stores, embedding APIs
+- Search results incomplete or incorrect due to lost visual cues
+- Pipelines break under real workloads, costly reprocessing
+
+**After:**
+- One seamless platform for multimodal data, search, and graph building
+- Precise, context-aware results reflecting document structure
+- Stable, scalable pipelines reducing operational overhead and cost
+
+
+## Getting Started
+
+Ready to transform your AI applications? Start by exploring the [Quick Start: Using Morphik](https://morphik.ai/docs/overview/feature-overview/quickstart) guide to set up your first ingestion and query workflow.
+
+
+<Steps>
+<Step title="Sign Up or Self-Host Morphik">
+- Choose between Morphik’s hosted service or self-hosting via Docker or direct install.
+- See [Signing Up for Morphik (Hosted Service)](https://morphik.ai/docs/getting-started/install-configure-morphik/cloud-signup) or [Self-Hosting Morphik](https://morphik.ai/docs/getting-started/install-configure-morphik/self-hosting-guide).
+</Step>
+<Step title="Install the Python SDK">
+- Install via pip with `pip install morphik`.
+- Explore the [Python SDK documentation](https://morphik.ai/docs/sdks/python/morphik).
+</Step>
+<Step title="Ingest Files and Query">
+- Use the SDK to ingest complex multimodal documents.
+- Query your data with semantic search and retrieval-augmented generation.
+- See example usage in the [SDK Tests and Examples](https://morphik.ai/docs/sdks/python/morphik/tests/README.md).
+</Step>
+<Step title="Explore Advanced Features">
+- Build knowledge graphs from your data.
+- Leverage metadata extraction and caching.
+- Customize workflows and integrate with external systems.
+</Step>
+</Steps>
+
+
+<Note>
+Morphik’s open core model and free tier let you experiment freely. The platform is designed to scale with your needs, whether developer, team, or enterprise.
+</Note>
+
+
+---
+
+## Additional Resources
+
+- [What is Morphik?](https://morphik.ai/docs/overview/intro-value/what-is-morphik) – Understand the core product philosophy and capabilities.
+- [Key Features at a Glance](https://morphik.ai/docs/overview/intro-value/product-highlights) – A concise list of Morphik’s most important features.
+- [Using Morphik with Console, SDK & API](https://morphik.ai/docs/overview/feature-overview/console-sdk-api) – Details on interacting with Morphik.
+
+
+Let Morphik unlock the full potential of your multimodal data, empowering AI applications with accuracy, scalability, and ease of use — all from a single, modern platform.
+
+---
+
+<CalloutTitle>Feedback?</CalloutTitle>
+We welcome your feedback and questions! Reach out through our [Discord community](https://discord.gg/BwMtv3Zaju) or file issues on our [GitHub repository](https://github.com/morphik-org/morphik-core/issues).
