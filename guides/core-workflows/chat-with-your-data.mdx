@@ -3,4 +3,215 @@ title: "Conversational AI: Chatting with Your Documents"
 description: "Enable interactive Q&A over your uploaded documents using the Morphik Agent and Console chat. This step-by-step guide shows how to setup, invoke, and optimize conversational workflows for research and support scenarios."
 ---
 
-*This page will automatically be generated from the codebase*
+# Conversational AI: Chatting with Your Documents
+
+Enable interactive Q&A over your uploaded documents using the Morphik Agent and Console chat. This step-by-step guide shows you how to set up, invoke, and optimize conversational workflows for research and support scenarios, empowering you to get precise, context-aware answers directly from your document collections.
+
+---
+
+## 1. Introduction
+
+Conversational AI with Morphik lets you transform your document repositories into intelligent, interactive knowledge assistants. By leveraging Morphik's agent framework and chat interface, you can ask natural language questions about your documents and receive accurate, sourced responses combining search, analysis, and knowledge graph insights.
+
+This guide focuses specifically on the **chatting experience** — how to activate and use the Morphik Agent alongside the Morphik Console or SDK to carry contextual conversations grounded in your document data.
+
+---
+
+## 2. Prerequisites
+
+Before starting, ensure you have:
+
+- A running Morphik server instance (hosted or self-hosted).
+- Documents uploaded to Morphik via the Console or SDK.
+- The Morphik Agent enabled and configured (part of Morphik Core).
+- Access to the Morphik Console for interactive chat or access to the Python SDK for programmatic use.
+
+> <Check>
+> Make sure your user account has permissions to query documents and knowledge graphs.
+> 
+---
+
+## 3. Workflow Overview
+
+### What You Will Accomplish
+
+- Set up Morphik Agent to interpret user queries.
+- Use natural language to query documents interactively.
+- Receive well-organized answers with clear source attributions.
+- Understand how the agent leverages multiple tools for retrieval and analysis.
+
+### Time Estimate
+
+~15–30 minutes to get a working chat interface and basic conversational flow.
+
+### Difficulty Level
+
+Intermediate — some familiarity with Morphik platform and basic querying.
+
+---
+
+## 4. Setting Up Conversational AI
+
+### Step 1: Confirm Documents Are Ingested
+
+You must have documents ingested into Morphik.
+
+- Use the Console to upload or verify documents.
+- Or use the Python SDK `ingest_text()` or `ingest_file()` functions.
+
+### Step 2: Configure the Morphik Agent
+
+The Morphik Agent acts as the orchestrator between user queries and Morphik's internal tools.
+
+- The agent uses a system prompt describing available tools like chunk retrieval, document analysis, knowledge graph queries, and code execution.
+- It converts user input into function calls to relevant Morphik APIs.
+
+Typical agent setup (embedded in Morphik Core):
+
+```python
+from core.agent import MorphikAgent
+
+# Assume document_service is your Morphik document API client
+agent = MorphikAgent(document_service=document_service, model="gpt-4")  # or any supported model
+```
+
+### Step 3: Build a Chat Interface
+
+You can interact with the agent through several clients:
+
+- **Morphik Console Chat**: Web-based chat UI within the Morphik Console.
+- **Python SDK**: Run queries programmatically by sending conversational history and user queries.
+
+Example: Basic agent run call from Python
+
+```python
+import asyncio
+
+async def chat(agent, user_query):
+    auth_context = ...  # your auth context
+    response = await agent.run(query=user_query, auth=auth_context)
+    print(response["response"])
+
+asyncio.run(chat(agent, "What is reinforcement learning?"))
+```
+
+> <Tip>
+> The agent requires an authenticated user context (`auth`) to respect data access control.
+> 
+### Step 4: Execute Conversational Queries
+
+With the agent configured and interface in place, you can ask questions like:
+
+- "Summarize the key points in the document about AI."
+- "Show me diagrams related to reinforcement learning."
+- "What entities appear in the contract documents?"
+
+The agent breaks these queries into tool calls behind the scenes and constructs rich, sourced responses.
+
+---
+
+## 5. How the Morphik Agent Works Behind the Scenes
+
+The Morphik Agent integrates several internal tools to answer user questions effectively:
+
+- **`retrieve_chunks`**: Finds the most relevant text and image fragments from indexed documents.
+- **`retrieve_document`**: Accesses full documents or metadata by ID.
+- **`document_analyzer`**: Extracts entities, facts, sentiment, and summaries.
+- **`knowledge_graph_query`**: Navigates entities and relationships in knowledge graphs.
+- **Other tools** like code execution and persistent memory saving.
+
+The agent dynamically decides which APIs to invoke based on the query context.
+
+---
+
+## 6. Best Practices & Tips
+
+- **Scope Your Queries**: Use filters like folder name or user ID to limit results and speed up responses.
+- **Use Multi-Turn Conversations**: Provide context from earlier messages to get more precise answers.
+- **Attribute Your Sources**: The agent returns source references for transparent answers.
+- **Monitor Token Limits**: Be mindful of model token constraints; truncate or segment documents if needed.
+- **Keep Your Documents Up to Date**: Re-ingest changed documents so retrieval returns current info.
+
+---
+
+## 7. Troubleshooting Common Issues
+
+<AccordionGroup title="Troubleshooting Conversational AI">
+<Accordion title="Agent Returns No or Irrelevant Results">
+- Verify your documents are indexed and visible to your user.
+- Check query filters and ensure they match existing document metadata.
+- Increase the number of chunks retrieved to widen the search scope.
+</Accordion>
+<Accordion title="Agent Fails or Crashes During Execution">
+- Confirm your Morphik service is running with adequate resources.
+- Check logs for errors related to tool invocation or model loading.
+- Validate your authentication token or context is correct.
+- Check model supported in your configuration (e.g. GPT-4).
+</Accordion>
+<Accordion title="Sources or Citations Are Missing in Responses">
+- Ensure your documents contain proper metadata with chunks.
+- Confirm the agent is using the correct source map.
+- Verify that retrieval calls return source IDs.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 8. Example: Interactive Chat with Morphik Console
+
+1. Open the Morphik Console in your browser.
+2. Navigate to the 'Chat' tab.
+3. Enter the query:
+
+```text
+What does the document say about reinforcement learning?
+```
+
+4. The chat will return a detailed answer with markdown formatting and source attributions.
+5. Explore linked entities or images directly within the chat where available.
+
+---
+
+## 9. Example: Python SDK Conversational Query
+
+```python
+from morphik import Morphik
+
+morphik = Morphik("morphik://user:token@api.morphik.ai")
+
+response = morphik.query("Explain the advantage of Retrieval Augmented Generation.")
+print(response.completion)
+```
+
+This sends a natural language query routed to the Morphik Agent that returns composed answers referencing documents.
+
+---
+
+## 10. Next Steps & Further Reading
+
+- Explore [Multimodal Search & Retrieval guide](/guides/core-workflows/multimodal-search) to understand how retrieval integrates with chat.
+- Learn about [Building Knowledge Graphs](/guides/knowledge-graphs/build-knowledge-graph) to enhance entity-level understanding.
+- Review [Cache-Augmented Generation](/guides/integrations-and-caching/cache-augmentation) to accelerate response times via document caching.
+- Deep dive into Morphik Console features in [Using the Morphik Console](/getting-started/first-steps-and-validation/using-the-morphik-console).
+- Consult the [Agent code & tools description](/core/agent.py) for advanced customization.
+
+---
+
+## 11. Summary
+
+By following this guide, you will have enabled a robust conversational AI interface backed by Morphik’s multimodal document understanding and knowledge graph capabilities. This conversational workflow transforms your static documents into interactive assistants that can support research, customer support, and knowledge discovery efficiently.
+
+---
+
+## References and Links
+
+- [Morphik Console Guide](https://morphik.ai/docs/getting-started/first-steps-and-validation/using-the-morphik-console)
+- [Morphik Python SDK](https://morphik.ai/docs/sdks/python/README)
+- [Multimodal Search Guide](https://morphik.ai/docs/guides/core-workflows/multimodal-search)
+- [Knowledge Graph Guide](https://morphik.ai/docs/guides/knowledge-graphs/build-knowledge-graph)
+- [Cache Augmented Generation Guide](https://morphik.ai/docs/guides/integrations-and-caching/cache-augmentation)
+- [Morphik Agent Source Code](https://github.com/morphik-org/morphik-core/blob/main/core/agent.py)
+
+<Tip>
+Engage with the Morphik Discord community for live support and tips on using conversational AI effectively.
+</Tip>
