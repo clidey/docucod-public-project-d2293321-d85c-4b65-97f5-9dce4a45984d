@@ -3,4 +3,306 @@ title: "Workflows & Rules"
 description: "Endpoints to orchestrate rules-based and analytic workflows over ingested documents. Includes methods for triggering extraction, classification, transformation, and monitoring workflow status. Documents the workflow execution lifecycle and supported rules."
 ---
 
-*This page will automatically be generated from the codebase*
+# Workflows & Rules API Reference
+
+Manage and orchestrate rules-based and analytic workflows that process your ingested documents with precision and automation. The Workflows & Rules API offers endpoints to define, control, and monitor multi-step workflows that trigger extraction, classification, transformation, and other rule-driven processing on your documents. This reference covers how to create workflows, run them on documents asynchronously, track execution status, and understand the lifecycle of workflow runs.
+
+---
+
+## 1. Overview
+
+Workflows in Morphik enable automation of document analysis using definable sequences of actions called steps. Each workflow is a named sequence of configured actions orchestrated to extract metadata, classify content, or perform transformations. You can create and manage workflows programmatically and trigger them on specific documents.
+
+### Key concepts:
+- **Workflow:** A named multi-step process consisting of one or more actions.
+- **Action:** A single step in a workflow, identified by an `action_id` and parameters.
+- **Workflow Run:** A concrete execution of a Workflow against a specific document.
+- **Run Status:** `queued`, `running`, `completed`, or `failed`.
+
+Workflows run asynchronously to keep your applications responsive; they queue jobs and execute in background tasks.
+
+---
+
+## 2. Authentication
+
+All Workflows & Rules endpoints require authentication using a valid bearer token with permissions scoped appropriately. Your token must include `read` and `write` permissions to create, update, or delete workflows, and `read` permission for listing or querying them.
+
+Unauthorized requests return HTTP 401 errors; insufficient permissions result in HTTP 403 errors.
+
+---
+
+## 3. Workflow Management Endpoints
+
+### 3.1 Create a New Workflow
+
+- **Method:** `POST`
+- **URL:** `/workflows`
+- **Description:** Define a new workflow by supplying its name, optional description, owner, and ordered list of action steps.
+
+#### Request Body Fields
+- `name` (string, required): Workflow name.
+- `description` (string, optional): Description of the workflow.
+- `owner_id` (string, required): Organization or developer ID.
+- `user_id` (string, optional): End-user ID for scoped workflows.
+- `app_id` (string, optional): Application ID if within app context.
+- `steps` (array of object, required): Ordered list of action steps.
+  - Each step:
+    - `action_id` (string, required): Identifier of the action.
+    - `parameters` (object, optional): Parameters specific to this action.
+
+#### Response
+- Returns the created workflow object with system metadata including creation timestamps.
+
+#### Errors
+- 403 Forbidden if write permission is missing.
+- 422 Validation error if required fields are missing or empty steps are provided.
+
+#### Example
+```json
+{
+  "name": "PII Redaction Workflow",
+  "owner_id": "org_123",
+  "steps": [
+    {
+      "action_id": "morphik.actions.redact_pii",
+      "parameters": {"redact_level": "strict"}
+    }
+  ]
+}
+```
+
+### 3.2 List Workflows
+
+- **Method:** `GET`
+- **URL:** `/workflows`
+- **Description:** Retrieve all workflows visible to the authenticated user.
+
+#### Response
+- Array of workflow objects.
+
+### 3.3 Get a Specific Workflow
+
+- **Method:** `GET`
+- **URL:** `/workflows/{workflow_id}`
+- **Description:** Retrieve detailed information about a single workflow by its ID.
+
+#### Errors
+- 404 Not Found if workflow does not exist or is not accessible.
+
+### 3.4 Update a Workflow
+
+- **Method:** `PUT`
+- **URL:** `/workflows/{workflow_id}`
+- **Description:** Partially update workflow properties such as name, description, or steps.
+
+#### Request Body
+- Partial JSON object with the fields to update.
+
+#### Response
+- Returns the updated workflow object.
+
+#### Errors
+- 403 Forbidden if insufficient permissions.
+- 404 Not Found if workflow not found.
+
+### 3.5 Delete a Workflow
+
+- **Method:** `DELETE`
+- **URL:** `/workflows/{workflow_id}`
+- **Description:** Permanently delete a workflow by its ID.
+
+#### Response
+- JSON confirmation on success.
+
+#### Errors
+- 403 Forbidden if insufficient permissions.
+- 404 Not Found if workflow does not exist.
+
+---
+
+## 4. Workflow Execution Endpoints
+
+Workflows are executed against specific documents using asynchronous runs.
+
+### 4.1 Queue a Workflow Run
+
+- **Method:** `POST`
+- **URL:** `/workflows/{workflow_id}/run/{document_id}`
+- **Description:** Schedule a run of the specified workflow on the given document. Returns immediately with a `WorkflowRun` object in `queued` state.
+
+This endpoints schedules the workflow execution in the background so the client receives quick feedback and the UI can reflect a "processing" status.
+
+#### Response
+- `WorkflowRun` object with properties:
+  - `id`: Run ID
+  - `workflow_id`: Workflow reference
+  - `document_id`: Document being processed
+  - `status`: One of `queued`, `running`, `completed`, `failed`
+  - `started_at`, `completed_at`: timestamps when run starts/completes
+  - `results_per_step`: Array storing results of individual steps (initially empty)
+  - `final_output`: The output of the last step
+  - `error`: Optional error message if run failed
+
+#### Errors
+- 403 Forbidden if permissions insufficient.
+- 404 Not Found if workflow or document does not exist.
+
+### 4.2 Get Workflow Run Details
+
+- **Method:** `GET`
+- **URL:** `/workflows/runs/{run_id}`
+- **Description:** Fetch detailed status and results of a workflow run identified by run ID.
+
+#### Response
+- `WorkflowRun` object with current status and outputs.
+
+#### Errors
+- 404 Not Found if run does not exist or access denied.
+
+### 4.3 List All Runs for a Workflow
+
+- **Method:** `GET`
+- **URL:** `/workflows/{workflow_id}/runs`
+- **Description:** List all execution runs for a specific workflow.
+
+#### Response
+- Array of `WorkflowRun` objects.
+
+### 4.4 Delete a Workflow Run
+
+- **Method:** `DELETE`
+- **URL:** `/workflows/runs/{run_id}`
+- **Description:** Delete a specific workflow run.
+
+#### Response
+- JSON confirmation message.
+
+#### Errors
+- 403 Forbidden if insufficient permissions.
+- 404 Not Found if run not found.
+
+---
+
+## 5. Workflow Lifecycle and Execution Flow
+
+Morphik’s workflow execution follows this lifecycle:
+
+1. **Creation** — Define a workflow with specific ordered actions.
+2. **Queue Run** — When triggered for a document, a run is queued with status `queued`.
+3. **Execution** — The system sets the run status to `running`, executes each step sequentially.
+4. **Result Gathering** — Each step produces output collected in the run’s `results_per_step`.
+5. **Completion** — On success, the run status changes to `completed`; document status updates.
+6. **Failure** — On errors or timeouts (~5 minutes maximum), the run status becomes `failed`.
+
+This approach guarantees non-blocking operation for user interfaces and API clients.
+
+---
+
+## 6. Understanding Workflow Steps (Actions)
+
+Each workflow step corresponds to an **Action** implementation registered within Morphik. Actions perform discrete processing tasks such as:
+- Extracting structured metadata
+- Running classification rules
+- Transforming documents
+- Calling external services
+
+### Action Identification
+Each step is defined with an `action_id` corresponding to a known action in Morphik's action registry.
+
+### Parameters
+Steps accept a JSON-serializable `parameters` object to customize action behavior. Check your configured action’s schema for supported parameters.
+
+### Available Actions
+You can list available actions programmatically via the internal registry or by exploring the Morphik GitHub code at [Morphik-Core workflows/actions](https://github.com/morphik-org/morphik-core/tree/main/core/workflows/actions).
+
+---
+
+## 7. Practical Usage Example
+
+Imagine you want to set up a workflow that automatically extracts structured metadata and redacts sensitive information whenever a document is ingested.
+
+1. **Create Workflow** with two steps:
+   - Action A: `morphik.actions.extract_structured` with schema parameters
+   - Action B: `morphik.actions.redact_sensitive` with redact level "medium"
+
+2. **Trigger Execution** using `/workflows/{id}/run/{document_id}` when a document finishes ingestion.
+
+3. **Monitor the run** via `/workflows/runs/{run_id}` to check progress and outputs.
+
+4. **Fetch results** from the `final_output` to verify completion or access extracted metadata.
+
+---
+
+## 8. Best Practices & Tips
+
+- **Define clear, focused workflows:** Compose workflows from smaller, reusable actions for maintainability.
+- **Use consistent owner and user scoping:** Attach `owner_id` and `user_id` to ensure correct visibility and access.
+- **Handle run statuses in your UI:** Track run status transitions (`queued`, `running`, `completed`, `failed`) to inform your users.
+- **Set reasonable timeouts:** The system defaults to 5 minutes per workflow run to prevent runaway executions.
+- **Check permissions carefully:** Workflows require `write` permission for creation and updates; listing requires `read`.
+
+---
+
+## 9. Troubleshooting
+
+### Common Issues
+
+- **Workflow Run stuck in queued:** Ensure background task handling is enabled and operational.
+- **Run fails quickly:** Check if the target document has a processing `failed` status; workflows only run on successfully processed documents.
+- **Action not found:** Verify the `action_id` matches registered actions exactly.
+- **Permission denied:** Confirm your token includes required scopes.
+
+### Tips
+- Use the `/workflows/{id}` endpoint to verify workflow configuration.
+- Query `/workflows/{workflow_id}/runs` to see past executions and error messages.
+- Consult Morphik Core repository `core.workflows.actions` for available actions and parameters.
+
+---
+
+## 10. Related Documentation
+
+- [Documents API](https://docs.morphik.com/api-reference/api-endpoints/documents-api) — For managing documents that workflows process.
+- [Knowledge Graphs API](https://docs.morphik.com/api-reference/api-endpoints/knowledge-graphs-api) — For enriching workflows with graph data.
+- [SDK Guides](https://docs.morphik.com/sdks/core-workflows/workflow-examples) — For programmatic workflow orchestration.
+- [System Architecture Overview](https://docs.morphik.com/overview/architecture-core-concepts/system-architecture) — To understand the broader data flow in Morphik.
+
+---
+
+## Appendix: Data Models
+
+### Workflow
+| Field           | Type           | Description                                  |
+|-----------------|----------------|----------------------------------------------|
+| id              | string (UUID)  | Unique workflow identifier                    |
+| name            | string         | Workflow name                                |
+| description     | string         | Optional description                         |
+| owner_id        | string         | Owner organization or developer ID          |
+| user_id         | string?        | Scoped end-user ID (optional)                |
+| app_id          | string?        | App ID for app-scoped workflows (optional) |
+| steps           | array          | Ordered action steps (ConfiguredAction)     |
+| system_metadata | dictionary     | Created/updated timestamps and metadata     |
+
+### ConfiguredAction
+| Field      | Type       | Description                                |
+|------------|------------|--------------------------------------------|
+| action_id  | string     | Identifier of the workflow action           |
+| parameters | dict       | JSON parameters for the action (optional)  |
+
+### WorkflowRun
+| Field           | Type           | Description                                  |
+|-----------------|----------------|----------------------------------------------|
+| id              | string (UUID)  | Unique run identifier                         |
+| workflow_id     | string         | Workflow ID this run executes                 |
+| document_id     | string         | Document ID this run processes                |
+| status          | enum           | Run status: queued, running, completed, failed |
+| started_at      | datetime?      | Timestamp when run started                    |
+| completed_at    | datetime?      | Timestamp when run completed                  |
+| results_per_step| list           | List of outputs per step                      |
+| final_output    | dict?          | Output of the final step                      |
+| error           | string?        | Error message if failed                       |
+
+---
+
+For full source and implementation details, see the [Morphik GitHub repository](https://github.com/morphik-org/morphik-core/tree/main/core/workflows).
+
+---
