@@ -3,4 +3,236 @@ title: "Installing the SDK"
 description: "How to install the Morphik Python SDK, with notes for different environments and compatibility. Learn where to find SDK releases and verify successful installation."
 ---
 
-*This page will automatically be generated from the codebase*
+# Installing the SDK
+
+Welcome to the Morphik Python SDK installation guide. This page walks you through the steps to install the Morphik Python SDK in your development environment, guiding you through compatibility notes and verification to ensure a smooth setup.
+
+---
+
+## Overview
+
+The Morphik Python SDK provides a fast, reliable, and easy-to-use client for interacting with the Morphik API, enabling document ingestion, semantic search, retrieval-augmented generation (RAG), knowledge graph creation, and more.
+
+This SDK supports Python 3.8 and above and is compatible across common operating systems including Linux, macOS, and Windows.
+
+Whether you are starting fresh or integrating into an existing project, this guide covers everything you need for a successful installation.
+
+---
+
+## Installation Requirements
+
+Before proceeding, ensure your environment meets the following prerequisites:
+
+- **Python version:** 3.8 or higher
+- **Package Manager:** pip (comes with Python installations)
+- **Internet access:** required to download packages from PyPI
+
+Additionally, some optional dependencies like `pillow` are included for enhanced functionality such as image processing.
+
+---
+
+## Installing the Morphik SDK
+
+You can install the Morphik Python SDK easily using pip, the Python package manager:
+
+```bash
+pip install morphik
+```
+
+This command downloads and installs the latest released version of the SDK from PyPI, along with all required dependencies including `httpx`, `pyjwt`, `pydantic`, and others.
+
+### Notes for Different Environments
+
+- **Virtual environments:** We strongly recommend installing the SDK inside a Python virtual environment (such as `venv` or `conda`) to avoid dependency conflicts.
+- **Offline installs or locked environments:** Download package files (`.whl` or `.tar.gz`) from PyPI manually or use a private repository. Refer to PyPI documentation for offline installs.
+- **PyPI versions:** The current stable release series is `0.2.x` (latest as of this guide is 0.2.9). For testing unreleased features, you may consider cloning from GitHub and installing locally.
+
+---
+
+## Verifying the Installation
+
+After installation, verify that the Morphik SDK is installed correctly and ready to use:
+
+### 1. Check the installed package version
+
+Run the following command:
+
+```bash
+python -c "from morphik import __version__; print(__version__)"
+```
+
+Expected output: The installed version number, e.g., `0.2.9`
+
+### 2. Run a Basic Import Test
+
+Start a Python interpreter and try importing the module:
+
+```python
+>>> from morphik import Morphik
+>>> db = Morphik()
+>>> print(db)
+```
+
+No import errors means your installation succeeded.
+
+### 3. Run the Example Script (Optional but Recommended)
+
+The SDK includes an example usage script with synchronous and asynchronous demonstrations.
+
+```bash
+# Clone or navigate to the SDK test directory
+cd sdks/python/morphik/tests
+
+# Run synchronous example
+python example_usage.py
+
+# Run asynchronous example
+python example_usage.py --run-async
+```
+
+This script performs:
+- Document ingestion (text and files)
+- Creating folders and user scopes
+- Querying and retrieving data
+- Listing and cleaning up documents
+
+Successful execution confirms end-to-end functionality.
+
+---
+
+## Managing SDK Versions
+
+Use pip to upgrade or downgrade as needed:
+
+```bash
+pip install --upgrade morphik
+
+# or to install a specific version
+pip install morphik==0.2.5
+```
+
+**Pro Tip:** Lock dependencies in your `requirements.txt` or `pyproject.toml` to ensure consistent environments.
+
+---
+
+## Troubleshooting Installation Issues
+
+Some common problems you might encounter and how to resolve them:
+
+<AccordionGroup title="Common Installation Issues and Solutions">
+<Accordion title="Python Version Not Supported">
+
+Make sure your Python interpreter is 3.8 or newer.
+
+Run:
+
+```bash
+python --version
+```
+
+Upgrade Python if necessary.
+
+</Accordion>
+
+<Accordion title="Permission or Access Errors">
+
+Try re-running pip with elevated permissions:
+
+```bash
+pip install --user morphik
+```
+
+Or use a virtual environment.
+
+</Accordion>
+
+<Accordion title="Network or Proxy Errors">
+
+Check your internet connectivity. If behind a proxy, configure environment variables like `HTTP_PROXY`.
+
+</Accordion>
+
+<Accordion title="Dependency Conflicts">
+
+Conflicting package versions can cause errors.
+
+Try installing within a fresh virtual environment to isolate dependencies.
+
+</Accordion>
+</AccordionGroup>
+
+For detailed troubleshooting, see the [Troubleshooting Installation Problems](https://morphik.ai/docs/getting-started/troubleshooting-help/common-install-issues) page.
+
+---
+
+## Where to Find SDK Releases
+
+The Python Morphik SDK is hosted on PyPI:
+
+- Package page: https://pypi.org/project/morphik/
+
+Source code and releases are available at the official GitHub repository:
+
+https://github.com/morphik-org/morphik-core
+
+You can browse releases, tags, and submit issues or feature requests there.
+
+---
+
+## Next Steps
+
+Once installed, proceed to:
+
+- [Authentication & Configuration](/sdks/getting-started/auth-config) to connect your Morphik client securely.
+- [First Data Ingestion](/sdks/getting-started/first-ingestion) to start uploading and querying documents.
+- Review [Synchronous vs Asynchronous Usage](/sdks/advanced-usage/sync-async-patterns) for integrating with your preferred programming model.
+
+---
+
+## Summary
+
+Installing the Morphik Python SDK is fast and straightforward with pip. Make sure you meet the Python version requirement, use virtual environments, verify your installation, and consult troubleshooting resources if needed. With the SDK ready, you can seamlessly integrate powerful document ingestion and search capabilities into your applications.
+
+If you encounter challenges, the Morphik community and detailed docs are available to support your journey.
+
+---
+
+## Example: Quick install and test
+
+```bash
+# Create and activate a virtual environment
+python -m venv morphik-env
+source morphik-env/bin/activate  # On Windows: .\morphik-env\Scripts\activate
+
+# Install Morphik SDK
+pip install morphik
+
+# Verify installation
+python -c "from morphik import Morphik; print(Morphik())"
+```
+
+---
+
+We’re excited to have you start building with Morphik!
+
+---
+
+## Related Documentation
+
+- [Morphik Python SDK Overview](https://morphik.ai/docs/sdks/python/README.md)
+- [Authentication & Configuration](https://morphik.ai/docs/sdks/getting-started/auth-config)
+- [First Data Ingestion](https://morphik.ai/docs/sdks/getting-started/first-ingestion)
+- [Troubleshooting Installation Problems](https://morphik.ai/docs/getting-started/troubleshooting-help/common-install-issues)
+- [Morphik Console Guide](https://morphik.ai/docs/getting-started/first-steps-and-validation/using-the-morphik-console)
+
+
+---
+
+<CardGroup cols={2}>
+<Card title="Morphik GitHub Repository">
+[https://github.com/morphik-org/morphik-core](https://github.com/morphik-org/morphik-core)
+</Card>
+<Card title="Morphik PyPI Package">
+[https://pypi.org/project/morphik/](https://pypi.org/project/morphik/)
+</Card>
+</CardGroup>
