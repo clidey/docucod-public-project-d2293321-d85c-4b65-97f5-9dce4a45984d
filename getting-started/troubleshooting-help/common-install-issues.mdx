@@ -3,4 +3,226 @@ title: "Troubleshooting Installation Problems"
 description: "Covers frequent installation and configuration hurdles, such as dependency conflicts, database setup failures, Docker misconfigurations, and missing credentials. Includes actionable steps to diagnose and fix common issues."
 ---
 
-*This page will automatically be generated from the codebase*
+# Troubleshooting Installation Problems
+
+This guide helps you quickly identify and resolve common installation and configuration issues encountered while setting up Morphik. Whether you are using the Docker-based deployment or self-hosting with manual installation, this page covers dependency conflicts, database connection issues, Docker misconfigurations, and missing credentials. Follow the actionable steps to diagnose and fix these problems to get your Morphik instance up and running smoothly.
+
+---
+
+## 1. Common Installation Issues and Solutions
+
+### 1.1 Dependency Conflicts
+
+**Problem:** Errors during Python SDK or Morphik installation often stem from incompatible Python versions or package dependency mismatches.
+
+**Solution:**
+
+- Ensure you are running **Python 3.8 or newer**, as required by Morphik SDK.
+- Use a clean virtual environment to avoid conflicting packages.
+- Install Morphik SDK with pip:
+
+  ```bash
+  python3 -m venv morphik-env
+  source morphik-env/bin/activate  # Linux/macOS
+  # .\morphik-env\Scripts\activate  # Windows
+
+  pip install --upgrade pip
+  pip install morphik
+  ```
+
+- If dependency errors persist, check installed package versions:
+
+  ```bash
+  pip list
+  ```
+
+  Update or uninstall conflicting packages as needed.
+
+- Refer to the [Morphik Python SDK Installation Guide](https://morphik.ai/docs/getting-started/install-configure-morphik/install-python-sdk) for detailed prerequisites.
+
+### 1.2 Database Setup Failures
+
+**Problem:** Morphik cannot connect to the PostgreSQL database, or migrations fail during setup.
+
+**Solution:**
+
+- Confirm your database is running and accessible.
+
+- For Docker deployments, check PostgreSQL container status:
+
+  ```bash
+  docker compose ps
+  docker compose logs postgres
+  ```
+
+- Connect to the database manually to verify credentials:
+
+  ```bash
+  docker compose exec postgres psql -U morphik -d morphik
+  ```
+
+- Verify `morphik.toml` database connection settings are correct and match your environment.
+
+- Run database migrations explicitly if needed:
+
+  ```bash
+  # Example for a manual install
+  alembic upgrade head
+  ```
+
+- If using self-hosted manual install, ensure dependencies for PostgreSQL drivers are installed (e.g., `asyncpg`).
+
+- Consult the [Self-Hosting Guide](https://morphik.ai/docs/getting-started/install-configure-morphik/self-hosting-guide) for detailed database setup instructions.
+
+### 1.3 Docker Misconfigurations
+
+**Problem:** Containers fail to start, or services cannot communicate.
+
+**Solution:**
+
+- Confirm Docker and Docker Compose are installed and updated.
+
+- Make sure you have sufficient resources (minimum 8GB RAM, 10GB disk space) available.
+
+- Use the quick start command to rebuild all containers:
+
+  ```bash
+  docker compose up --build
+  ```
+
+- Check container logs for errors:
+
+  ```bash
+  docker compose logs morphik
+  docker compose logs postgres
+  docker compose logs ollama
+  ```
+
+- Ensure the configuration file `morphik.toml` is correctly mounted and uses valid parameters, especially for service hostnames and ports inside Docker (e.g., `ollama:11434`).
+
+- Verify environment variables in `.env` files are set properly, particularly the `JWT_SECRET_KEY`.
+
+- If a full reset is needed, clear volumes with:
+
+  ```bash
+  docker compose down -v
+  ```
+
+- Monitor resource usage with:
+
+  ```bash
+  docker stats
+  df -h
+  ```
+
+- For production, make sure proper network security and HTTPS setup is in place.
+
+Refer to the full [Docker Setup Guide](https://morphik.ai/docs/getting-started/install-configure-morphik/self-hosting-guide#docker-setup) for detailed diagnostics.
+
+### 1.4 Missing or Invalid Credentials
+
+**Problem:** Authentication failures when connecting to hosted Morphik or API services.
+
+**Solution:**
+
+- For hosted Morphik, verify you have obtained your Morphik URI token via the [Cloud Signup Guide](https://morphik.ai/docs/getting-started/install-configure-morphik/cloud-signup).
+
+- Check that your token is correctly supplied in the SDK client initialization:
+
+  ```python
+  from morphik import Morphik
+
+  morphik = Morphik("morphik://owner_id:token@api.morphik.ai")
+  ```
+
+- Environment variables such as `MORPHIK_API_TOKEN` (if used) should be set and exported.
+
+- For self-hosted setups, ensure the `JWT_SECRET_KEY` matches the one configured in `morphik.toml` and is consistent across services.
+
+- Run health check endpoints to verify authentication status:
+
+  ```bash
+  curl http://localhost:8000/health
+  ```
+
+If you encounter `AuthenticationError` or connection refusals, double-check tokens and secrets.
+
+---
+
+## 2. Diagnostic Commands
+
+Use these commands to quickly pinpoint issues during installation:
+
+| Command                                  | Purpose                               |
+|------------------------------------------|-------------------------------------|
+| `pip show morphik`                      | Confirm Morphik SDK installed       |
+| `python -c "import morphik"`          | Verify SDK import                   |
+| `docker compose ps`                     | Check Docker container status       |
+| `docker compose logs <service>`         | View logs for specific service      |
+| `docker compose exec postgres psql ...`| Connect to Postgres DB inside Docker|
+| `curl http://localhost:8000/health`     | Check Morphik API health status     |
+
+---
+
+## 3. Troubleshooting Tips
+
+- **Slow model downloads in Docker:** The initial setup downloads large AI models and may take several minutes.
+  - Ensure stable internet connection.
+  - Avoid interrupting `docker compose up --build`.
+
+- **Port conflicts:** If port 8000 or others are in use, update `morphik.toml` and `.env` accordingly.
+
+- **File permission errors:** When mounting storage volumes, check directory permissions to allow container access.
+
+- **Incomplete migrations:** Always run migration scripts after upgrading Morphik, especially if instructed (see the Auth Migration guide).
+
+- **Verbose logs for debugging:** Increase logging verbosity in `morphik.toml` for deeper insight.
+
+- **Resource constraints:** Monitor system RAM and disk space as insufficient resources cause timeouts and failures.
+
+- **Use the Morphik Discord community** for help if stuck: [https://discord.gg/BwMtv3Zaju](https://discord.gg/BwMtv3Zaju).
+
+---
+
+## 4. When to Contact Support
+
+If you have tried all steps above and still face issues, consider:
+
+- Reviewing recent GitHub issues for similar problems.
+- Posting detailed logs and error messages in Morphik's Discord or GitHub issues.
+- Consulting related documentation pages listed below.
+
+---
+
+## 5. Related Documentation
+
+- [Self-Hosting Morphik (Docker & Manual)](https://morphik.ai/docs/getting-started/install-configure-morphik/self-hosting-guide)
+- [Morphik Python SDK Installation](https://morphik.ai/docs/getting-started/install-configure-morphik/install-python-sdk)
+- [System Requirements & Prerequisites](https://morphik.ai/docs/getting-started/introduction-and-prerequisites/system-requirements)
+- [Auth Migration Steps](https://morphik.ai/docs/getting-started/install-configure-morphik/auth-migration-steps)
+- [Getting Started with Morphik Console](https://morphik.ai/docs/getting-started/first-steps-and-validation/using-the-morphik-console)
+- [Validating Your Morphik Setup](https://morphik.ai/docs/getting-started/first-steps-and-validation/validation-and-health-checks)
+
+---
+
+## 6. Quick Reference Example: Checking Docker Logs
+
+```bash
+# Check overall container status
+docker compose ps
+
+# Inspect logs of Morphik service for errors
+docker compose logs morphik
+
+# Inspect Postgres logs if DB errors
+docker compose logs postgres
+
+# Restart failed services if needed
+docker compose restart morphik
+```
+
+---
+
+This guide empowers you to detect and resolve most common installation and configuration challenges with Morphik. For complex cases or unique environment setups, please consult the community or the Morphik support channels for tailored assistance.
+
+
