@@ -3,4 +3,180 @@ title: "Error Handling & Status Codes"
 description: "Reference for all possible API error responses, HTTP status codes, and how to interpret them in your application. Provides actionable remedies for common issues such as authentication failures, format problems, and quota overruns."
 ---
 
-*This page will automatically be generated from the codebase*
+# Error Handling & Status Codes
+
+Understanding and managing errors effectively is crucial when working with the Morphik API. This reference guides you through the possible API error responses and HTTP status codes you may encounter. Knowing how to interpret these responses allows you to implement resilient client applications, troubleshoot issues rapidly, and provide meaningful feedback to users.
+
+---
+
+## 1. HTTP Status Codes Overview
+
+The Morphik API follows conventional HTTP status code semantics. Below is a summary of the key status codes and what they mean in the context of your API interactions:
+
+| Status Code | Meaning                                  | When It Occurs                                    | Action Recommended                          |
+|-------------|------------------------------------------|--------------------------------------------------|---------------------------------------------|
+| 200 OK      | Request succeeded                        | Normal successful API responses                   | Proceed with result processing               |
+| 201 Created | Resource successfully created            | When new documents, folders, or entities are created | Confirm creation and continue workflow       |
+| 400 Bad Request | Client sent invalid request payload    | Malformed JSON, invalid parameters, or validation failures | Fix request payload and retry                |
+| 401 Unauthorized | Authentication missing or invalid     | Missing or expired token, invalid credentials     | Re-authenticate; check token validity       |
+| 403 Forbidden| Insufficient permissions                | Access denied due to user role or quota limits    | Ensure proper permissions; upgrade if needed|
+| 404 Not Found| Requested resource not found             | Invalid document/folder ID or graph name        | Verify resource identifiers                   |
+| 422 Unprocessable Entity | Validation error              | Required fields missing or invalid input format  | Correct request format                        |
+| 429 Too Many Requests | Rate or quota limit exceeded        | API usage limit reached                          | Implement backoff; monitor quota              |
+| 500 Internal Server Error | Server-side failure            | Unexpected errors on the server                   | Retry later; report if persistent             |
+
+---
+
+## 2. Common Error Types and Their Handling
+
+### 2.1 Authentication Errors
+
+Errors related to authentication are explicitly represented by the status codes 401 and 403.
+
+- **401 Unauthorized**: The most frequent cause is missing, malformed, expired, or revoked JWT tokens. Your application should validate tokens before requests and provide mechanisms to refresh or reacquire credentials.
+
+- **403 Forbidden**: Occurs when the authenticated user lacks sufficient scope or permissions for the requested operation. Review your user or app role settings. Certain endpoints may also reject requests if quotas or rate limits have been exceeded.
+
+<Accordion title="Example Authentication Error Response">
+```json
+{
+  "detail": "Invalid authentication token"
+}
+```
+</Accordion>
+
+### 2.2 Validation Errors (422)
+
+API requests require proper formats, mandatory fields, and valid values. The server returns status 422 when validation fails, often accompanied by detailed field-level error messages.
+
+Use this feedback to correct your request. For example, missing required fields like `content` when ingesting, or malformed JSON in metadata, triggers this.
+
+<Tip>
+Always validate your request payloads client-side when possible to prevent validation errors.
+</Tip>
+
+### 2.3 Resource Not Found (404)
+
+If you reference a non-existent document, folder, graph, or other resource, the API returns 404. This ensures your client handles missing or deleted resources gracefully by prompting re-fetching or notifying the user.
+
+<Warning>
+Ensure resource identifiers (e.g., document IDs, folder names) are correct and URL-encoded before making requests.
+</Warning>
+
+### 2.4 Rate Limiting and Quota Errors (429 and 403)
+
+Morphik enforces quotas and rate limits based on account tier.
+
+- **429 Too Many Requests**: Temporary rate limit exceeded; your client should back off and retry with exponential delays.
+- **403 Forbidden**: Permanent quota exhaustion or restricted permissions to perform the operation.
+
+See the [Quotas & Rate Limits](https://docs.morphik.ai/api-reference/api-operations-limits/quota-limits) documentation for detailed tier info and how to monitor usage.
+
+### 2.5 Internal Server Errors (500)
+
+Unexpected errors on the server side result in a 500 status code.
+
+If seen repeatedly in production, collect request details and raise a support ticket.
+
+---
+
+## 3. SDK Exceptions
+
+When using the Morphik Python SDK, errors are surfaced as exceptions, which map to API error conditions.
+
+| Exception Class           | Description                          | Suggested Handling                  |
+|---------------------------|------------------------------------|-----------------------------------|
+| `MorphikError`            | Base exception for all SDK errors  | Catch to handle general errors    |
+| `AuthenticationError`     | Authentication or token issues     | Re-authenticate or refresh token  |
+| `ConnectionError`         | Network or server communication failure | Retry with backoff; check connectivity |
+
+<Accordion title="Example SDK Error Handling">
+```python
+from morphik.exceptions import AuthenticationError, ConnectionError
+
+try:
+    result = morphik_client.query("some query")
+except AuthenticationError:
+    print("Authentication failed: please check your credentials.")
+except ConnectionError:
+    print("Network error: retrying...")
+except MorphikError as e:
+    print(f"An error occurred: {e}")
+```
+</Accordion>
+
+---
+
+## 4. Error Response Structure
+
+Error responses typically contain a JSON body with a `detail` key describing the failure.
+
+```json
+{
+  "detail": "Detailed error message"
+}
+```
+
+Some validation failures may return complex structures:
+
+```json
+{
+  "detail": [
+    {"loc": ["body", "content"], "msg": "field required", "type": "value_error.missing"}
+  ]
+}
+```
+
+---
+
+## 5. Practical Tips for Robust Error Handling
+
+- **Retry Logic**: Implement retry with exponential backoff for recoverable errors like 429, 500, or connection errors.
+- **Authentication Refresh**: Integrate token refresh flows to handle expired or revoked tokens gracefully.
+- **Input Validation**: Pre-validate your request payloads to catch missing or malformed fields early.
+- **Scoped Queries**: Ensure folder and user scope parameters are valid to avoid 404 or permission errors.
+- **Logging & Monitoring**: Log error responses with request context to enable rapid diagnosis.
+- **User Communication**: Surface actionable error messages to end users, especially around authentication and quota issues.
+
+---
+
+## 6. Troubleshooting Common Scenarios
+
+### 6.1 Receiving 401 Unauthorized
+- Confirm your Morphik URI and token are correct.
+- Check token expiration.
+- Make sure your app or user has correct permissions.
+
+### 6.2 Receiving 403 Forbidden
+- Verify that your user/app has the needed scopes (read, write, admin).
+- Review if the operation is allowed for your plan or tier.
+
+### 6.3 Getting Validation Errors on Ingestion
+- Ensure the `content` field is present and non-empty.
+- Check metadata JSON structure if used.
+- Validate filenames are correctly provided if applicable.
+
+### 6.4 Encountering 429 Errors
+- Implement appropriate wait/retry after this response.
+- Monitor your usage quotas in the Morphik Console or via API.
+- Upgrade your tier if limits are insufficient.
+
+### 6.5 Failing to Find a Document or Folder
+- Double-check document or folder IDs.
+- Remember that IDs are case-sensitive and unique.
+- Ensure folder or user scoping parameters are consistent with your stored data.
+
+---
+
+## 7. Additional Resources
+
+- [Authentication Overview](https://docs.morphik.ai/api-reference/api-authentication-requests/auth-overview): How to obtain and use tokens.
+- [Quotas & Rate Limits](https://docs.morphik.ai/api-reference/api-operations-limits/quota-limits): Details on usage limits.
+- [SDK Usage & Error Handling](https://docs.morphik.ai/api-reference/api-authentication-requests/sdk-examples#error-handling): Examples on catching SDK errors.
+- [Core API Endpoints](https://docs.morphik.ai/api-reference/api-endpoints/documents-api#error-responses): Endpoint-specific error information.
+
+---
+
+By keeping this error reference close, you can confidently handle API failures and build resilient integrations with Morphik that deliver seamless user experiences.
+
+---
