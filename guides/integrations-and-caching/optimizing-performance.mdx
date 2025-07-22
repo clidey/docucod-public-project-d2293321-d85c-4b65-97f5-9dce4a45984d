@@ -3,4 +3,184 @@ title: "Performance & Cost Optimization"
 description: "Best practices for minimizing compute costs and maximizing responsiveness. Covers batching strategies, concurrent workflows, vector storage selection, and usage limit configuration for both free tier and self-hosted deployments."
 ---
 
-*This page will automatically be generated from the codebase*
+# Performance & Cost Optimization
+
+Optimizing performance and managing compute costs effectively are key to scaling your Morphik deployment smoothly. This guide focuses specifically on strategies within Morphik for minimizing compute time and maximizing responsiveness. You'll learn best practices around batching, concurrent workflows, vector storage selection, and configuring usage limits for both Free Tier and self-hosted setups.
+
+---
+
+## 1. Understanding the Optimization Landscape
+
+Morphik processes complex document workflows involving ingestion, embedding generation, vector storage, and serving queries. Optimizing these layers ensures fast response times and cost-efficient resource consumption.
+
+### Why Optimize?
+- **Reduce latency:** Speed up document ingestion, search, and cache queries.
+- **Lower compute costs:** Especially important for on-demand cloud resources or GPU usage.
+- **Improve throughput:** Support concurrent workflows without bottlenecks.
+- **Maximize resource utilization:** Balance CPU, memory, storage, and API call costs.
+
+
+---
+
+## 2. Batching Strategies
+
+Batching is one of the most effective ways to optimize compute and database operations by reducing per-operation overhead.
+
+### Ingestion & Embeddings
+- **Batch document chunks:** Send document text chunks in groups rather than individually when calling embedding models or vector stores.
+- **Bulk insert to vector store:** Use Morphik’s bulk-insert APIs to add numerous embeddings in a single transaction, reducing database round-trips.
+
+### Query Batching
+- **Retrieve multiple chunks per query:** Request multiple relevant chunks at once instead of frequent single-chunk queries.
+- **Batch chunk retrieval by IDs:** Use batch methods to fetch multiple known chunks, minimizing query count.
+
+<Tip>
+Batching significantly improves throughput and reduces costs. Use it whenever possible but balance batch size against memory constraints and latency impact.
+</Tip>
+
+---
+
+## 3. Concurrent Workflows & Parallelism
+
+Morphik supports async operations and connection pooling to handle concurrent workloads.
+
+### Best Practices
+- **Enable async where supported:** Use async APIs in the SDK or API to allow concurrent ingestion, querying, and cache updates.
+- **Adjust connection pool sizes:** In database-backed vector stores like PostgreSQL with pgvector, configure connection pools thoughtfully (see [pgvector_store.py](https://github.com/morphik-org/morphik-core/blob/main/core/vector_store/pgvector_store.py)) to avoid connection limits or excessive resource use.
+- **Throttle concurrent API calls:** Set limits on external embedding or completion API usage to prevent rate limiting or cost spikes.
+
+### Configurable Parameters
+- `DB_POOL_SIZE` and `DB_MAX_OVERFLOW` in configuration control database connections.
+- Retry delays and maximum retries help handle temporary connectivity issues gracefully.
+
+<Note>
+Concurrency can improve responsiveness but requires monitoring for contention and resource exhaustion. Use logging and metrics to tune based on load.
+</Note>
+
+---
+
+## 4. Selecting the Right Vector Storage
+
+Morphik supports multiple vector store implementations, each with performance and cost tradeoffs.
+
+### PostgreSQL with pgvector
+- **Pros:** Integrates into existing SQL database, supports cosine similarity, out-of-the-box indexing.
+- **Performance Tips:** Use batch inserts and IVFFlat indexes; monitor index rebuild needs after dimension changes.
+- **Limitations:** Max vector dimensions capped (2000) and some overhead compared to dedicated vector DBs.
+
+### MultiVectorStore (Binary Quantization)
+- **Pros:** Compact binary vectors speed up similarity; better for multi-vector embeddings.
+- **Use case:** When embedding vectors are large or multi-vector, leverage this for better query efficiency.
+
+Evaluate based on your data size, query load, and available infrastructure. When running locally or self-hosted, PostgreSQL with pgvector balances operational simplicity and solid speed.
+
+---
+
+## 5. Usage Limits Configuration
+
+Controlling API usage is essential to avoid runaway costs, especially with expensive third-party models like OpenAI or Anthropic.
+
+### Limits in Free Tier vs Self-hosted
+- **Free Tier:** Strict daily and per-minute usage caps apply to embeddings and completions.
+- **Self-hosted:** You can configure limits in `morphik.toml` or environment variables to manage costs and throughput.
+
+### Relevant Environment Variables
+```dotenv
+# JWT secret for secure production - also affects rate limiting enforcement
+token_lifetime_sec=3600
+# API keys for external providers
+OPENAI_API_KEY=sk-xxxx
+ANTHROPIC_API_KEY=xxx
+# Vector storage config
+VECTOR_STORE_PROVIDER=pgvector
+# Connection pool sizes
+DB_POOL_SIZE=20
+DB_MAX_OVERFLOW=30
+```
+
+### Best Practices
+- Monitor usage metrics regularly to identify spikes.
+- Set conservative batch sizes and concurrency limits initially.
+- For costly providers, implement quota alerts and fallback mechanisms.
+
+---
+
+## 6. Practical Tips & Common Pitfalls
+
+- **Dimension changes require table re-creation:** When changing embedding dimensions, Morphik will prompt for confirmation since it deletes all vector data. Plan downtime accordingly.
+- **Avoid single large document chunks:** Break documents into smaller chunks (e.g., 500-1000 tokens) to balance retrieval speed and relevance.
+- **Use cache-augmented generation for faster queries:** Pre-load frequent queries into persistent caches to reduce repeated compute.
+- **Watch out for database connection limits:** Connection pool misconfiguration can cause failures under load.
+
+<Tip>
+Automate monitoring and alerting for usage, latency, and error rates to maintain steady performance.
+</Tip>
+
+---
+
+## 7. Case Study: Optimizing Cache-Augmented Generation
+
+Consider a user doing interactive Q&A over a large knowledge base.
+
+### Without Optimization
+- Each query triggers repeated embedding and vector store searches.
+- Document chunks retrieved individually causing many DB calls.
+
+### Optimized Workflow
+1. **Batch ingestion and caching:** Ingest documents with batching and create persistent caches using LlamaCache.
+2. **Batch chunk queries:** Queries fetch multiple relevant chunks at once.
+3. **Async concurrency:** Run update and query operations asynchronously to minimize wait times.
+4. **Limit API calls:** Configure usage limits on LLM calls to control costs.
+
+This approach delivers low-latency responses while controlling compute consumption.
+
+---
+
+## 8. Troubleshooting & Monitoring
+
+<AccordionGroup title="Common Issues and Solutions">
+<Accordion title="Slow Query or Ingestion Performance">
+- Verify batch sizes are sufficiently large.
+- Check database connection pool configurations.
+- Monitor CPU and RAM usage to detect bottlenecks.
+- Reduce concurrency if resource constraints are detected.
+- Make sure indexes (e.g., IVFFlat) are active and not fragmented.
+</Accordion>
+<Accordion title="Database Connection Failures">
+- Confirm `DB_POOL_SIZE` and `DB_MAX_OVERFLOW` are set appropriately.
+- Check network connectivity and database logs.
+- Ensure retry settings allow graceful reconnection.
+</Accordion>
+<Accordion title="Embedding Dimensions Changed Prompt">
+- Understand that dimension changes require dropping and recreating tables.
+- Prepare backups before confirming to avoid data loss.
+</Accordion>
+<Accordion title="Excessive API Costs">
+- Set per-minute and daily rate limits.
+- Use cached completions wherever possible.
+- Monitor usage logs and alerts.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 9. Next Steps & Further Reading
+
+- [Cache-Augmented Generation Guide](https://docs.morphik.ai/guides/integrations-and-caching/cache-augmentation) – Learn how to leverage persistent caching for faster completions.
+- [Self-Hosting Morphik](https://docs.morphik.ai/getting-started/install-configure-morphik/self-hosting-guide) – Configure your own deployment for full control.
+- [PGVector Vector Store Details](https://github.com/morphik-org/morphik-core/blob/main/core/vector_store/pgvector_store.py) – Understand deep vector storage mechanics.
+- [Morphik Console Usage](https://docs.morphik.ai/getting-started/first-steps-and-validation/using-the-morphik-console) – Monitor performance and configure limits in UI.
+
+---
+
+This guide empowers you to tune performance and cost-effectiveness confidently within Morphik’s ecosystem, balancing speed, cost, and scalability based on your workload and infrastructure.
+
+
+---
+
+<Callout>
+If you encounter issues not resolved here, consult the [Troubleshooting Installation Problems](https://docs.morphik.ai/getting-started/troubleshooting-help/common-install-issues) page or connect with the Morphik community for expert support.
+</Callout>
+
+---
+
