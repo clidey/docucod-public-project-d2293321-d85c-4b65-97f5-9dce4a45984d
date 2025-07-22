@@ -3,4 +3,159 @@ title: "Signing Up for Morphik (Hosted Service)"
 description: "Step-by-step instructions for creating a free Morphik account on the hosted platform. Covers sign-up, accessing the Morphik Console, and where to find your API credentials to begin ingesting data immediately."
 ---
 
-*This page will automatically be generated from the codebase*
+# Signing Up for Morphik (Hosted Service)
+
+Welcome to Morphik’s hosted platform! This guide will walk you through signing up for a free Morphik account, accessing the Morphik Console, and locating your API credentials so you can start ingesting and querying data right away.
+
+---
+
+## 1. Create Your Free Morphik Account
+
+Getting started with Morphik’s hosted service takes just a few minutes.
+
+### Steps:
+
+1. Open your web browser and go to the Morphik sign-up page:  
+   👉 [https://www.morphik.ai/signup](https://www.morphik.ai/signup)
+
+2. Fill in the registration form with your:
+   - **Email address**
+   - **Full name**
+   - **Password** (choose a strong password)
+
+3. Review the terms and privacy policy, then submit the form.
+
+4. Check your email inbox for a verification message from Morphik.
+
+5. Click the verification link in your email to activate your account.
+
+<Tip>
+If you don't see the verification email within a few minutes, check your spam or junk folder.
+</Tip>
+
+---
+
+## 2. Accessing the Morphik Console
+
+After you activate your account, the Morphik Console gives you a user-friendly web interface to manage your data, ingest documents, and run queries.
+
+### Steps:
+
+1. Navigate to the Morphik Console at:  
+   👉 [https://console.morphik.ai](https://console.morphik.ai)
+
+2. Log in using your registered email and password.
+
+3. Upon login, you’ll see your dashboard showing your projects, ingested documents, and usage stats.
+
+<Note>
+The Console simplifies managing your data without writing code. It's perfect for exploring Morphik’s features quickly.
+</Note>
+
+---
+
+## 3. Locating Your API Credentials
+
+To integrate Morphik’s powerful API or Python SDK with your applications, you need your **Morphik URI** — a secure token-based endpoint that authenticates your requests.
+
+### Steps:
+
+1. In the Morphik Console, click on your user profile icon (top-right corner).
+
+2. Select **API Settings** or **Developer Settings** from the dropdown menu.
+
+3. Here you will find your Morphik URI, which looks like:
+
+   ```plaintext
+   morphik://<app_name>:<token>@api.morphik.ai
+   ```
+
+4. You can copy this URI and use it directly to authenticate calls to Morphik’s API or SDK.
+
+<Tip>
+Keep your Morphik URI private – it contains authentication tokens granting access to your data.
+</Tip>
+
+---
+
+## 4. Start Using Morphik with Your API Credentials
+
+With your Morphik URI in hand, you can immediately begin ingesting documents and running queries.
+
+### Using the Python SDK (Example):
+
+Install the SDK if you haven’t already:
+
+```bash
+pip install morphik
+```
+
+Then run this sample code to try ingesting a file and querying it:
+
+```python
+from morphik import Morphik
+
+# Replace <your-morphik-uri> with the URI from your console
+morphik = Morphik("<your-morphik-uri>")
+
+# Ingest a document (local file path)
+morphik.ingest_file("./docs/sample.pdf")
+
+# Query the content
+response = morphik.query("What is the main topic of the document?")
+print(response.completion)
+```
+
+This quick example verifies that your account is active, the API token works, and your environment is ready.
+
+<Note>
+Refer to the [Morphik Python SDK guide](/sdks/getting-started/install-sdk) for detailed SDK usage instructions.
+</Note>
+
+---
+
+## 5. Best Practices and Tips
+
+- **Email Verification:** Always verify your email before accessing the console or API.
+- **Secure Your Token:** Treat your Morphik URI as a secret. Avoid sharing or committing it to public code repositories.
+- **Upgrade Options:** The free tier is generous, but you can upgrade later to unlock higher limits and additional features.
+- **Explore the Console:** Use the console to upload, organize, and preview your documents before automating with code.
+
+---
+
+## 6. Troubleshooting Common Signup Issues
+
+<AccordionGroup title="Troubleshooting Signup and Access">
+<Accordion title="Didn’t Receive Verification Email">
+- Check your spam or junk folders.
+- Ensure your email address is correctly typed.
+- Try resending the verification email through the Morphik signup page.
+- Contact support if issues persist.
+</Accordion>
+<Accordion title="Unable to Log In After Signup">
+- Confirm your account is activated via the verification link.
+- Reset your password using the "Forgot Password" option.
+- Clear browser cache or try a different browser.
+</Accordion>
+<Accordion title="Can’t Find API URI in Console">
+- Make sure you are logged into the correct account.
+- Navigate to **API Settings** or **Developer Settings** carefully.
+- Reach out to support if your Developer Settings page doesn’t show a Morphik URI.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 7. Where to Go Next
+
+- Explore using the [Morphik Console guide](/getting-started/first-steps-and-validation/using-the-morphik-console) for advanced data management,
+- Proceed to [Installing Morphik Python SDK](/getting-started/install-configure-morphik/install-python-sdk) to build integrations,
+- Learn about [Running Your First Query](/getting-started/first-steps-and-validation/run-first-sdk-query) with code examples.
+
+For broader context, see the [Quick Start guide](/overview/feature-overview/quickstart) that covers typical workflows after signup.
+
+---
+
+If you need additional help, join the Morphik Discord community or submit an issue on our [GitHub repository](https://github.com/morphik-org/morphik-core/issues).
+
+---
