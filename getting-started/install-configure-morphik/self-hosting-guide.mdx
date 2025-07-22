@@ -3,4 +3,331 @@ title: "Self-Hosting Morphik (Docker & Direct Install)"
 description: "Detailed directions for deploying Morphik on your own infrastructure. Covers obtaining the source, Docker-based or manual setup, running core scripts, running database migrations, and initial server start. Provides helpful links for installation scripts and troubleshooting."
 ---
 
-*This page will automatically be generated from the codebase*
+# Self-Hosting Morphik (Docker & Direct Install)
+
+Deploy Morphik on your own infrastructure with confidence. This guide walks you through obtaining the source code, setting up Morphik using Docker or direct installation methods, running necessary database migrations, and launching the core services. Perfect for developers or organizations who want full control over their Morphik deployment.
+
+---
+
+## 1. Prerequisites & System Requirements
+
+Before proceeding with self-hosting, ensure your environment meets the following:
+
+- **Operating System:** Linux, macOS, or Windows (via WSL2 or native Docker support).
+- **RAM:** Minimum 8 GB RAM; 16 GB recommended for production workloads.
+- **Disk Space:** At least 10 GB free space (for AI models and local document storage).
+- **Software:** Docker (with Docker Compose v2), Git, Python 3.9+ (for direct install).
+- **Network:** Outbound internet access to download AI models on first startup.
+
+<Tip>
+If you are on an Apple Silicon Mac (ARM64), direct installation is recommended for optimal performance and GPU access. See the troubleshooting section below.
+</Tip>
+
+---
+
+## 2. Obtaining the Source Code
+
+Start by cloning the Morphik Core repository to your local machine:
+
+```bash
+git clone https://github.com/morphik-org/morphik-core.git
+cd morphik-core
+```
+
+This gives you the latest available source to deploy and customize.
+
+---
+
+## 3. Docker-Based Setup (Recommended)
+
+Morphik provides an all-in-one Docker Compose configuration including core services:
+
+- Morphik API server
+- PostgreSQL database (with pgvector extension)
+- Redis for caching
+- Ollama AI model server
+
+### Step-by-Step Docker Setup
+
+<Steps>
+  <Step title="Check Docker and Docker Compose Installation">
+    Ensure Docker is installed and Docker Compose V2 is available:
+    
+    ```bash
+docker --version
+docker compose version
+```
+  </Step>
+
+  <Step title="Download Docker Compose Configuration">
+    Use the installation script or manually download the config:
+
+    ```bash
+curl -fsSL -o docker-compose.run.yml https://raw.githubusercontent.com/morphik-org/morphik-core/main/docker-compose.run.yml
+```
+  </Step>
+
+  <Step title="Create Environment Variables File">
+    Prepare an `.env` file for secrets:
+
+    ```bash
+cat > .env <<EOF
+OPENAI_API_KEY=
+JWT_SECRET_KEY=your-random-secure-key-$(openssl rand -hex 16)
+EOF
+```
+
+    Replace `OPENAI_API_KEY` with your actual OpenAI key if used.
+  </Step>
+
+  <Step title="Start the Morphik Stack">
+    Launch all services with:
+
+    ```bash
+docker compose -f docker-compose.run.yml up -d
+```
+
+    The first run may take 5-10 minutes due to AI model downloads.
+  </Step>
+
+  <Step title="Verify Services are Running">
+    Check status of containers:
+
+    ```bash
+docker compose -f docker-compose.run.yml ps
+```
+
+    Access API docs at [http://localhost:8000/docs](http://localhost:8000/docs).
+  </Step>
+</Steps>
+
+### Managing the Docker Stack
+
+- To stop services:
+
+  ```bash
+docker compose -f docker-compose.run.yml down
+```
+
+- To fully reset (removes all data and models):
+
+  ```bash
+docker compose -f docker-compose.run.yml down -v
+```
+
+### Custom Configuration
+
+To customize Morphik settings:
+
+1. Extract the default config:
+
+    ```bash
+docker run --rm ghcr.io/morphik-org/morphik-core:latest cat /app/morphik.toml.default > morphik.toml
+```
+
+2. Edit `morphik.toml` as needed.
+3. Mount it in `docker-compose.run.yml` by uncommenting the volume mount for `morphik.toml` under the `morphik` and `worker` services.
+
+---
+
+## 4. Direct Installation (Manual Setup)
+
+For maximum control or if you prefer not to use Docker, follow these steps.
+
+### Prerequisites
+
+- Python 3.9 or higher
+- PostgreSQL 16+ with pgvector installed
+- Redis server
+
+### Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    
+    ```bash
+git clone https://github.com/morphik-org/morphik-core.git
+cd morphik-core
+```
+  </Step>
+  <Step title="Install Python Dependencies">
+    
+    ```bash
+pip install -r requirements.txt
+```
+  </Step>
+  <Step title="Configure morphik.toml">
+    Copy the sample config and edit it to point to your PostgreSQL and Redis instances.
+
+    ```bash
+cp morphik.toml.sample morphik.toml
+# Edit morphik.toml with your preferred editor
+```
+
+    Ensure the `[database]` and `[storage]` sections are configured.
+  </Step>
+  <Step title="Run Database Migrations">
+    
+    ```bash
+python scripts/migrate_auth_columns_complete.py --postgres-uri "postgresql+asyncpg://user:pass@host:port/db"
+```
+    
+    Replace connection URI accordingly.
+  </Step>
+  <Step title="Start Morphik Server">
+    
+    ```bash
+uvicorn core.api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+  </Step>
+</Steps>
+
+---
+
+## 5. Running the Worker
+
+Morphik uses workers for background ingestion and processing:
+
+- **Docker:** A `worker` service is included in the Docker Compose file and runs automatically.
+
+- **Direct Install:** Start the worker manually:
+
+```bash
+python -m arq core.workers.ingestion_worker.WorkerSettings
+```
+
+Ensure it is running alongside the API server for full functionality.
+
+---
+
+## 6. Verifying Your Setup
+
+Access the API endpoint:
+
+- Open your browser to: [http://localhost:8000/health](http://localhost:8000/health)
+
+You should see a JSON response that confirms the service health.
+
+Use the Swagger UI for API exploration at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+---
+
+## 7. Troubleshooting
+
+<AccordionGroup title="Common Issues and Resolutions">
+<Accordion title="Service Won't Start or Crashes">
+- Check logs:
+
+  ```bash
+  docker compose logs morphik
+  docker compose logs postgres
+  docker compose logs ollama
+  ```
+- Ensure Docker has sufficient memory and disk allocated.
+- Verify that the `JWT_SECRET_KEY` and database credentials are correct.
+- For direct install, confirm all dependencies installed and paths are correct.
+</Accordion>
+
+<Accordion title="Database Connection Failures">
+- Confirm PostgreSQL is running and accessible.
+- For Docker, the database container health status can be checked:
+
+  ```bash
+  docker compose ps
+  ```
+- Test PostgreSQL connection manually:
+
+  ```bash
+  docker compose exec postgres psql -U morphik -d morphik
+  ```
+</Accordion>
+
+<Accordion title="AI Model Download Issues">
+- Insufficient disk space or network timeouts can interrupt model downloads.
+- Restart Ollama service if models fail to load:
+
+  ```bash
+  docker compose restart ollama
+  ```
+</Accordion>
+
+<Accordion title="Performance Problems or Resource Limits">
+- Monitor resources with:
+
+  ```bash
+  docker stats
+  df -h
+  ```
+- Increase RAM allocation to Docker (min 8GB recommended).
+- Consider direct installation if using Apple Silicon.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 8. Security & Production Recommendations
+
+- **Change `JWT_SECRET_KEY` to a secure random string before deploying publicly.**
+- Use HTTPS with a reverse proxy (e.g., Nginx, Traefik).
+- Set up named volumes for database and storage to persist data.
+- Regularly update the Morphik containers or source.
+- Enable health checks and monitoring.
+
+---
+
+## 9. Useful Links
+
+- [Morphik GitHub Repository](https://github.com/morphik-org/morphik-core)
+- [Docker Compose File (`docker-compose.run.yml`)](https://raw.githubusercontent.com/morphik-org/morphik-core/main/docker-compose.run.yml)
+- [Morphik Documentation Home](https://docs.morphik.ai)
+- [Morphik Console Usage Guide](https://docs.morphik.ai/getting-started/first-steps-and-validation/using-the-morphik-console)
+- [Installing Morphik Python SDK](https://docs.morphik.ai/getting-started/install-configure-morphik/install-python-sdk)
+- [Morphik Troubleshooting](https://docs.morphik.ai/getting-started/troubleshooting-help/common-install-issues)
+
+---
+
+## Appendix: Example Commands Summary
+
+```bash
+# Clone repository
+git clone https://github.com/morphik-org/morphik-core.git
+cd morphik-core
+
+# Docker setup
+curl -fsSL -o docker-compose.run.yml https://raw.githubusercontent.com/morphik-org/morphik-core/main/docker-compose.run.yml
+
+# Create .env with secrets
+cat > .env <<EOF
+OPENAI_API_KEY=your_key_goes_here
+JWT_SECRET_KEY=your-secure-random-key
+EOF
+
+# Start services
+docker compose -f docker-compose.run.yml up -d
+
+# Check services
+docker compose -f docker-compose.run.yml ps
+
+# Stop services
+docker compose -f docker-compose.run.yml down
+
+# Run database migration (direct install example)
+python scripts/migrate_auth_columns_complete.py --postgres-uri "postgresql+asyncpg://user:pass@host:port/db"
+
+# Start API server (direct install)
+uvicorn core.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Start worker (direct install)
+python -m arq core.workers.ingestion_worker.WorkerSettings
+
+# Check health endpoint
+curl http://localhost:8000/health
+```
+
+---
+
+## Conclusion
+
+This guide equips you with the exact steps to get Morphik running on your infrastructure, whether via the convenient Docker Compose method or by direct manual installation. Following best practices on configuration, migration, and troubleshooting will ensure a smooth self-hosting experience.
+
+Happy deploying!
