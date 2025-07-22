@@ -1,0 +1,149 @@
+---
+title: "Core Concepts & Terminology"
+description: "Get clear, jargon-free explanations of Morphik’s foundational ideas: document chunking, multimodal embeddings, knowledge graphs, rules-driven metadata extraction, persistent cache, and more. Build a shared vocabulary to navigate the rest of the documentation and the product effectively."
+---
+
+# Core Concepts & Terminology
+
+Welcome to Morphik’s foundational concepts page. Before diving deep into the platform’s powerful features and workflows, it’s essential to establish a clear understanding of the key ideas and terminology that shape Morphik’s core. This shared vocabulary will help you navigate the rest of the documentation and effectively use the product.
+
+---
+
+## Why This Matters
+
+Imagine encountering a rich technical manual filled with text, diagrams, images, and tables. Typical AI pipelines might treat this as just plain text, losing critical context and relationships. Morphik changes that by deeply understanding each document’s structure and content, bringing true multimodal intelligence to your data.
+
+This page breaks down the crucial building blocks that Morphik uses to accomplish this and explains why they matter to you as a user.
+
+---
+
+## Key Terms and Concepts
+
+### 1. Document Chunking
+
+**What it is:**
+
+Document chunking is the process of breaking down large documents into smaller, manageable fragments—called "chunks." These chunks represent logically coherent pieces of content, like paragraphs, image sections, or parts of a table.
+
+**Why it matters:**
+
+- Enables efficient indexing and retrieval.
+- Allows the system to focus on relevant sections instead of entire documents.
+- Supports multimodal analysis by chunking both text and images appropriately.
+
+**Example:**
+
+When you upload a 500-page PDF, Morphik automatically chunks it into 1,000+ segments, each carrying enough context to be embedded and searched individually.
+
+---
+
+### 2. Multimodal Embeddings
+
+**What it is:**
+
+Embeddings are numerical representations of data (like text or images) in a high-dimensional vector space that capture semantic meaning. Morphik uses multimodal embeddings, meaning it jointly represents content from multiple data types — text, images, diagrams — in the same conceptual space.
+
+**Why it matters:**
+
+- Allows you to search across text and images seamlessly.
+- Supports similarity search that understands cross-modal relationships.
+- Improves accuracy by integrating visual context alongside text.
+
+**Example:**
+
+A query about "engine parts" can return image chunks from an exploded diagram alongside text paragraphs describing those parts, all based on their semantic closeness in the embedding space.
+
+---
+
+### 3. Knowledge Graphs
+
+**What it is:**
+
+Knowledge graphs organize information extracted from documents into entities (people, places, components) and relationships (associations, hierarchies). Morphik builds these graphs automatically based on your data, enabling rich navigation and insight discovery.
+
+**Why it matters:**
+
+- Connects related information across documents or media.
+- Enables complex queries beyond keyword matching.
+- Visualizes data relationships to uncover hidden knowledge.
+
+**Example:**
+
+From a technical manual, Morphik automatically constructs a graph linking "part A" to "assembly instructions" and "supplier X," so you can explore and query connections intuitively.
+
+---
+
+### 4. Rules-Driven Metadata Extraction
+
+**What it is:**
+
+Morphik incorporates a configurable rules engine to extract structured metadata from unstructured documents. This includes things like bounding boxes for text blocks, classifications, labels, and custom attributes.
+
+**Why it matters:**
+
+- Improves search precision with rich metadata filters.
+- Supports compliance, auditing, and cataloging workflows.
+- Adaptable to domain-specific extraction needs via user-defined rules.
+
+**Example:**
+
+A rule might detect invoice numbers based on formatting patterns, tagging chunks accordingly so you can search or filter invoices by number.
+
+---
+
+### 5. Persistent Cache
+
+**What it is:**
+
+A storage mechanism that preserves results of computationally expensive operations, like LLM completions or similarity searches, to speed up repeat queries.
+
+**Why it matters:**
+
+- Dramatically reduces response times for frequent queries.
+- Decreases operational costs by avoiding redundant computations.
+- Enhances user experience with snappy performance.
+
+**Example:**
+
+When you ask the same question twice, Morphik can serve the answer instantly from cache, without re-running the whole pipeline.
+
+---
+
+### Additional Terms You Will Encounter
+
+- **Vector Store:** The specialized database that stores embeddings for fast similarity searches.
+- **Multivector Store:** An advanced vector store handling multiple embedding vectors per chunk for nuanced multimodal matching.
+- **Parser:** The component that ingests raw documents, applies chunking and metadata extraction.
+- **Embedding Model:** The AI model converting chunks into embeddings.
+- **Completion Model:** The language model that generates answers, summaries, or insights.
+
+---
+
+## Navigating With These Terms
+
+Understanding these core concepts equips you to make the most of Morphik’s features, from ingestion through to complex semantic search and knowledge graph queries. Keep this glossary at hand as you explore the platform.
+
+For practical application and deeper insight into system architecture, metadata rules, and knowledge graphs, check out the following pages:
+
+- [System Architecture Overview](/overview/architecture-core-concepts/system-architecture)
+- [Multimodal Search & Retrieval](/guides/core-workflows/multimodal-search)
+- [Metadata Extraction with Rules Engine](/guides/core-workflows/extract-metadata)
+- [Building a Knowledge Graph from Documents](/guides/knowledge-graphs/build-knowledge-graph)
+
+---
+
+## Quick Recap
+
+- Document chunking breaks documents into meaningful pieces.
+- Multimodal embeddings represent text and images in a unified space.
+- Knowledge graphs connect entities and concepts extracted from documents.
+- Rules-driven extraction adds structured metadata to raw documents.
+- Persistent caching accelerates query responses by reusing results.
+
+With a clear grasp on these building blocks, you’re ready to move forward and unlock the full power of Morphik.
+
+---
+
+<Tip>
+If you’re new to multimodal AI or knowledge graphs, consider starting with the [System Architecture Overview](/overview/architecture-core-concepts/system-architecture) to see how these concepts fit together in practice.
+</Tip>

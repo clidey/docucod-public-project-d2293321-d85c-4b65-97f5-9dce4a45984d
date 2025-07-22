@@ -1,0 +1,161 @@
+---
+title: "Required Migrations and Updates"
+description: "Describes the simple migration needed (for users who installed before June 22nd, 2025) to benefit from faster authentication. Details how to run the migration script and verify success."
+---
+
+# Required Migrations and Updates
+
+This guide walks you through a critical migration step required for users who installed Morphik **before June 22nd, 2025** to take advantage of faster authentication mechanisms introduced in recent updates. Follow the procedure below to run the migration script safely and verify that your system is updated correctly.
+
+---
+
+## Why This Migration is Necessary
+
+If you installed Morphik prior to June 22, 2025, your installation uses an older authentication flow that can be slower and less efficient. This migration updates authentication-related database schemas and tokens to support faster, more secure authentication processes.
+
+Skipping this migration will not immediately break your system but may impact authentication performance and compatibility with newer SDKs or the Morphik Console.
+
+---
+
+## Prerequisites
+
+Before running the migration, ensure the following:
+
+- You have **administrator or write access** to the Morphik database.
+- Your Morphik instance is **stopped or in maintenance mode** to avoid concurrent writes.
+- You have access to the Morphik installation environment and command line.
+- Your current Morphik version is indeed from before the cutoff date.
+
+<Tip>
+Run this migration **only once**. Running it multiple times is safe but unnecessary and may cause confusion.
+</Tip>
+
+---
+
+## Step 1: Locate the Migration Script
+
+The migration script is provided within the Morphik source repository under the `/migrations` directory named `auth_fast_path_migration.py`.
+
+1. If you installed via Docker or pre-built packages, obtain the migration script from the Morphik GitHub repository:
+
+```bash
+curl -o auth_fast_path_migration.py https://raw.githubusercontent.com/morphik-org/morphik-core/main/migrations/auth_fast_path_migration.py
+```
+
+2. If you maintain the source directory locally, navigate to:
+
+```
+<your-morphik-dir>/migrations/auth_fast_path_migration.py
+```
+
+
+---
+
+## Step 2: Backup Your Database
+
+Before applying any migrations, **backup your database** to prevent data loss:
+
+```bash
+pg_dump -U <your_db_user> -h <your_db_host> -Fc morphik > morphik_backup_$(date +%Y%m%d).dump
+```
+
+- Replace `<your_db_user>` and `<your_db_host>` with your actual credentials.
+- This ensures you can restore your database if anything goes wrong.
+
+<Warning>
+Do not skip this step. Database migrations can modify authentication-related data critically.
+</Warning>
+
+---
+
+## Step 3: Run the Migration Script
+
+The migration script is a standalone Python executable. It requires your database connection environment variables or uses the existing Morphik configuration.
+
+1. Ensure your environment variables for the database connection are set (e.g., `POSTGRES_URI`):
+
+```bash
+export POSTGRES_URI=postgresql+asyncpg://<user>:<password>@<host>:5432/morphik
+```
+
+2. Run the migration script:
+
+```bash
+python3 auth_fast_path_migration.py
+```
+
+3. The script will connect to your Morphik database and perform the necessary schema updates and token transformations.
+
+4. If the script outputs success messages, migration is complete. If errors occur, review the error logs and confirm your database connection and permissions.
+
+---
+
+## Step 4: Verify Migration Success
+
+Confirm the migration was successful by checking the following:
+
+1. **Restart Morphik services** (API server, workers, and UI).
+
+2. Run the following command to check Morphik's authentication status or perform a test login:
+
+```bash
+curl -H "Authorization: Bearer <your_token>" https://<your-morphik-url>/ping
+```
+
+- If this returns HTTP 200 with a successful response, the authentication flow is working.
+
+3. Optionally, inspect your database migration tables or Morphik logs for entries related to authentication migration.
+
+4. Confirm in your Morphik Console or via the SDK that authentication is noticeably faster.
+
+<Check>
+If you experience authentication errors or slowdowns, re-verify your migration steps, database backup status, and logs.
+</Check>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup title="Common Issues and Solutions">
+<Accordion title="Migration Script Fails to Connect to Database">
+- Verify your `POSTGRES_URI` and environment variables are correct.
+- Confirm network accessibility to the database host.
+- Check database user permissions.
+- Review error logs printed during migration for more detail.
+</Accordion>
+<Accordion title="Migration Script Raises Permission Errors">
+- Ensure the database user has sufficient permissions to modify authentication-related tables.
+- Consider temporarily elevating privileges or using a superuser.
+- Confirm Morphik services are not running to avoid conflicts.
+</Accordion>
+<Accordion title="Authentication Fails After Migration">
+- Double-check Morphik service restarts.
+- Inspect the authentication logs for errors.
+- Roll back to your database backup and retry migration carefully.
+- Contact Morphik support if issues persist.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+- Continue with setting up or upgrading your Morphik SDK and Console to leverage the faster authentication.
+- Review other migration or configuration update guides if your Morphik install is older.
+- Consult the [Morphik System Requirements]( /getting-started/introduction-and-prerequisites/system-requirements) and [Basic Configuration]( /getting-started/install-configure-morphik/configuration-basics) for environment tuning.
+- Explore workflow automation and advanced features that benefit from improved authentication performance.
+
+---
+
+## Related Documentation
+
+- [System Requirements & Prerequisites]( /getting-started/introduction-and-prerequisites/system-requirements)
+- [Basic Configuration]( /getting-started/install-configure-morphik/configuration-basics)
+- [Self-Hosting Guide]( /getting-started/install-configure-morphik/self-hosting-guide)
+- [Morphik Console Guide]( /getting-started/first-steps-and-validation/using-the-morphik-console)
+
+---
+
+For assistance, visit the community support page or contact support through your Morphik Console.
+
+---

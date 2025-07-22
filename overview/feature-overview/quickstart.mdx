@@ -1,0 +1,195 @@
+---
+title: "Quick Start: Using Morphik"
+description: "Guide users through the fastest path to trying Morphik, including sign-up, running a basic ingestion-and-search workflow in Python using the SDK, and using the web console. Minimize barriers to discovering Morphik's capabilities."
+---
+
+# Quick Start: Using Morphik
+
+Welcome to the quickest path to exploring Morphik’s powerful capabilities. This guide will take you step-by-step through signing up, running a basic ingestion and search workflow using the Python SDK, and trying out the Morphik web console. Our aim is to minimize barriers so you can experience the power of Morphik immediately.
+
+---
+
+## Why This Guide Matters
+
+Morphik provides an AI-native platform to work with complex, multimodal documents by letting you ingest, search, query, and manage data seamlessly. However, getting started should be fast and straightforward. This page focuses on accelerating your journey:
+
+- Get an account and API credentials quickly
+- Use the Python SDK with simple code examples to ingest documents and query your data
+- Access the Morphik web console for interactive exploration
+
+You’ll run a basic end-to-end scenario to understand the core workflow and see real results quickly.
+
+---
+
+## Your First Step: Signing Up and Getting Your URI
+
+1. Visit [https://www.morphik.ai/signup](https://www.morphik.ai/signup) and create a free Morphik account.
+2. After signing up, navigate to your dashboard to find your Morphik URI. This URI is your key to authenticating API clients and SDKs.
+
+> <Tip>
+> Keep your Morphik URI confidential — it connects you to your workspace and data.
+> </Tip>
+
+---
+
+## Using the Python SDK: Your Fast Track to Ingestion and Query
+
+Morphik's Python SDK makes it easy to programmatically ingest documents and perform semantic queries. Below is a quick run-through using the synchronous client to:
+
+- Connect to Morphik
+- Ingest example text documents
+- Create a knowledge graph
+- Perform graph-augmented queries
+
+### Installation
+
+Make sure Python is installed, then install the Morphik SDK:
+
+```bash
+pip install morphik
+```
+
+### Minimal Working Example
+
+Here is a concise example showing the basic workflow (based on the `examples/knowledge_graphs.py`):
+
+```python
+import os
+from dotenv import load_dotenv
+from morphik import Morphik
+
+# Load environment variables from a .env file (if you use one)
+load_dotenv()
+
+# Connect to Morphik using your URI from the environment variable
+morphik_uri = os.getenv("MORPHIK_URI")
+db = Morphik(morphik_uri, timeout=10000, is_local=True)  # Adjust is_local as needed
+
+# Prepare some sample documents
+sample_texts = [
+    {
+        "text": "AI technology is advancing rapidly with applications in healthcare. Machine learning models are being used to predict patient outcomes.",
+        "metadata": {"category": "tech", "domain": "healthcare"},
+    },
+    {
+        "text": "Cloud computing enables AI systems to scale. AWS, Azure, and Google Cloud provide infrastructure for machine learning.",
+        "metadata": {"category": "tech", "domain": "cloud"},
+    },
+    {
+        "text": "Electronic health records are being analyzed with natural language processing to improve diagnoses.",
+        "metadata": {"category": "tech", "domain": "nlp"},
+    },
+]
+
+# Ingest documents
+for item in sample_texts:
+    doc = db.ingest_text(item["text"], metadata=item["metadata"])
+    print(f"Ingested document with ID: {doc.external_id}")
+
+# Create a knowledge graph from the ingested documents filtered to 'tech' category
+graph = db.create_graph(name="tech_healthcare_graph", filters={"category": "tech"})
+print(f"Created graph with name: {graph.name}")
+
+# Run a graph-enhanced query
+response = db.query(
+    "How is AI technology being used in healthcare?",
+    graph_name="tech_healthcare_graph",
+    hop_depth=2
+)
+print("Graph-enhanced query response:")
+print(response.completion)
+
+# Optionally, include path information in the query results
+response_with_paths = db.query(
+    "What technologies are used for analyzing electronic health records?",
+    graph_name="tech_healthcare_graph",
+    hop_depth=2,
+    include_paths=True,
+)
+
+if response_with_paths.metadata and "graph" in response_with_paths.metadata:
+    print("\nGraph paths found:")
+    for path in response_with_paths.metadata["graph"]["paths"]:
+        print(" -> ".join(path))
+
+# Close the client when done
+db.close()
+```
+
+### Outcome:
+
+- Documents are ingested and indexed
+- A knowledge graph is built focusing on technology documents
+- Queries leverage graph connections for richer answers
+
+This simple example demonstrates the Morphik typical flow: **ingest → graph build → query.**
+
+---
+
+## Using the Morphik Web Console
+
+In addition to SDK access, the Morphik web console provides an intuitive interface for:
+
+- Uploading files and documents
+- Creating and managing folders
+- Running search queries and viewing results
+- Visualizing knowledge graphs
+
+Simply log in at [https://console.morphik.ai](https://console.morphik.ai) with your Morphik account.
+
+> <Tip>
+> The console allows you to experiment without writing code and quickly validate ingestion or query results.
+> </Tip>
+
+---
+
+## Best Practices for Quick Success
+
+- **Use environment variables** to securely store and load your Morphik URI.
+- **Start small** with a few documents to understand data ingestion and search behavior.
+- **Explore filters and metadata**: tagging documents improves query relevance.
+- **Leverage knowledge graphs** to enhance the context and answer richness.
+- **Monitor document processing status** via the SDK before querying.
+
+---
+
+## Common Pitfalls and Troubleshooting
+
+- **No results returned for your query?**
+  - Ensure documents are fully processed; wait for ingestion to complete.
+  - Use consistent metadata tags in your filters.
+
+- **Authentication errors?**
+  - Double-check that your Morphik URI is correctly set and accessible.
+  - Verify your free-tier limits or subscription status.
+
+- **Networking issues in local environment?**
+  - Confirm that your client `is_local` flag matches your deployment.
+  - For hosted Morphik API, use the correct URI format.
+
+---
+
+## What’s Next?
+
+Now that you have the basics:
+
+- Dive deeper into the Python SDK: explore batch ingestion, folders, and user scoping.
+- Explore the [Morphik Console Guide](/getting-started/first-steps-and-validation/using-the-morphik-console) to master GUI workflows.
+- Learn advanced querying and knowledge graph customization in the [Knowledge Graphs Guides](/guides/knowledge-graphs/build-knowledge-graph).
+- Check the [SDK API Reference](/api-reference/api-authentication-requests/sdk-examples) for detailed client capabilities.
+
+---
+
+## Additional Resources
+
+- [Morphik Python SDK Overview](https://morphik.ai/docs/sdks/python/README.md)
+- [Example Usage Script](https://github.com/morphik-org/morphik-core/blob/main/sdks/python/morphik/tests/example_usage.py)
+- [Morphik Console Introduction](https://morphik.ai/docs/getting-started/first-steps-and-validation/using-the-morphik-console)
+- [Full System Architecture Overview](https://morphik.ai/docs/overview/architecture-core-concepts/system-architecture)
+
+
+---
+
+Welcome to the start of your Morphik-powered AI journey. From here, your powerful workflows and richer document understanding await.
+
+---

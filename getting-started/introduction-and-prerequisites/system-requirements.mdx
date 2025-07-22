@@ -1,0 +1,158 @@
+---
+title: "System Requirements & Prerequisites"
+description: "Cover the prerequisites for running Morphik, including supported platforms, Python version requirements, and dependencies for both cloud (hosted) and self-hosted deployments. This page also notes required credentials for the cloud and hardware/software considerations for self-hosted setups."
+---
+
+# System Requirements & Prerequisites
+
+To ensure a seamless experience with Morphik—whether you are using our hosted cloud service or opting for self-hosted deployment—you must meet specific system and software prerequisites. This page guides you through understanding these requirements and how to prepare your environment for Morphik.
+
+---
+
+## Supported Platforms
+
+Morphik supports the following environments:
+
+- **Cloud (Hosted Service):** No client-side install requirements apart from network connectivity.
+- **Self-Hosted:** Compatible with Linux x86_64 (Ubuntu 20.04+ recommended).
+
+Morphik's primary developer tooling, including the Python SDK, supports macOS, Linux, and Windows for local client usage.
+
+---
+
+## Python Version Requirements
+
+Morphik’s Python SDK and backend components require:
+
+- **Python 3.8 or higher**
+
+Ensure Python is installed properly and is accessible via your command line. You can verify your Python version by running:
+
+```bash
+python3 --version
+```
+
+If Python is older than 3.8, upgrade before proceeding.
+
+---
+
+## Required Packages and Dependencies
+
+### For Morphik Python SDK
+
+Install the Morphik Python client with:
+
+```bash
+pip install morphik
+```
+
+This will install the following dependencies automatically:
+
+- `httpx` (for HTTP requests)
+- `pyjwt` (for JWT token handling)
+- `pydantic` (for data validation)
+- `requests`
+- `pillow` (for image processing)
+
+### For Self-Hosted Deployments
+
+When self-hosting Morphik, additional system packages are required:
+
+- **Docker:** if using containerized installs
+- **PostgreSQL:** for the backend database
+- **Redis:** for caching
+- **Python packages:** specified in the `requirements.txt` or `pyproject.toml`, including the above dependencies and backend-specific libraries
+
+Please refer to the [Self-Hosting Morphik (Docker & Direct Install)](/getting-started/install-configure-morphik/self-hosting-guide) page for detailed installation instructions.
+
+---
+
+## Hardware & Software Considerations for Self-Hosting
+
+- **CPU:** Minimum 4 cores recommended for production deployments
+- **RAM:** At least 8 GB available, 16 GB or more for heavy workloads
+- **Disk Space:** Allocate minimum 10 GB free space for database and indices
+- **Network:** Stable internet connection is needed for external API calls (e.g., cloud embeddings or LLM usage)
+- **Operating System:** Ubuntu 20.04 LTS recommended for best compatibility and security updates
+
+---
+
+## Access & Credential Requirements for Hosted Cloud
+
+To use Morphik’s hosted deployment:
+
+- **Morphik Account:** Register at [https://www.morphik.ai/signup](https://www.morphik.ai/signup)
+- **API Credentials:** You will receive an authentication token (JWT) when you sign up.
+- **Network Access:** Your development environment must be able to reach `api.morphik.ai` on HTTPS (port 443).
+
+You will use these credentials to authenticate via the Python SDK or REST API.
+
+### Special Notes
+
+- Ensure your firewall or corporate proxy does not block outbound HTTPS traffic to `api.morphik.ai`.
+- You will need proper authorization scopes enabled on your account for ingesting and querying data.
+
+---
+
+## Network Requirements
+
+Network configurations must allow traffic as below:
+
+| Direction | Protocol | Port | Destination               | Purpose                         |
+|-----------|----------|------|---------------------------|--------------------------------|
+| Outbound  | TCP      | 443  | `api.morphik.ai`          | API calls to Morphik Cloud      |
+| Outbound  | TCP      | 5432 | Your PostgreSQL Server     | Self-hosted DB connectivity     |
+| Outbound  | TCP      | 6379 | Redis Server               | Caching and message queue       |
+
+When self-hosting on a private network, ensure that these ports are open and accessible within your environment.
+
+---
+
+## Summary Checklist
+
+Before proceeding with Morphik installation or usage, confirm the following:
+
+- [ ] Running Python 3.8 or higher
+- [ ] Morphik Python SDK installed via `pip`
+- [ ] For self-hosting, Docker, PostgreSQL, and Redis installed and configured
+- [ ] Morphik account created for cloud usage with API token obtained
+- [ ] Network allows outbound HTTPS to `api.morphik.ai`
+- [ ] Hardware meets minimum CPU, RAM, and disk recommendations (especially for self-hosted environments)
+
+---
+
+## Troubleshooting Common Prerequisite Issues
+
+<Tip>
+**Python Version Check:** If `python3 --version` returns a version below 3.8, install or upgrade Python.
+</Tip>
+
+<Tip>
+**Dependency Installation Errors:** Try updating `pip` with `pip install --upgrade pip` before installing Morphik SDK.
+</Tip>
+
+<Warning>
+If you are behind a proxy, configure your shell environment variables (`HTTP_PROXY`, `HTTPS_PROXY`) to allow Python and `pip` to reach external URLs.
+</Warning>
+
+<Note>
+For self-hosted installations, follow the exact steps in the Self-Hosting guide to ensure all system dependencies match the backend requirements.
+</Note>
+
+---
+
+## Next Steps
+
+- Proceed to the [Signing Up for Morphik (Hosted Service)](/getting-started/install-configure-morphik/cloud-signup) guide if you want to use the hosted service.
+- For self-hosting, follow the complete instructions at [Self-Hosting Morphik (Docker & Direct Install)](/getting-started/install-configure-morphik/self-hosting-guide).
+- Once installed and configured, test your setup using the [Validating Your Morphik Setup](/getting-started/first-steps-and-validation/validation-and-health-checks) page.
+
+---
+
+For a high-level introduction to Morphik and its capabilities, refer to [What is Morphik?](/getting-started/introduction-and-prerequisites/what-is-morphik).
+
+
+---
+
+© Morphik Documentation 2024
+

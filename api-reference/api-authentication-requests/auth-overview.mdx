@@ -1,0 +1,186 @@
+---
+title: "Authentication Overview"
+description: "Explains Morphik's JWT-based authentication mechanism, token retrieval, and how to send authenticated requests. Details required headers and token structure, including differences between production and development environments."
+---
+
+# Authentication Overview
+
+Understanding how to authenticate your requests to Morphik's API is crucial for securely accessing and interacting with your documents, knowledge graphs, and other powerful features. This page unpacks the essentials of Morphik’s JWT-based authentication system, instructing you how to obtain tokens, use them in API calls, and what to expect especially between development and production environments.
+
+---
+
+## 1. What is Morphik’s Authentication Mechanism?
+
+Morphik uses **JWT (JSON Web Token)** authentication to securely identify and authorize users of the system. When you connect with Morphik, whether via the Python SDK, REST API, or Morphik Console, your requests carry an **authentication token** that proves your identity and your permitted access scope.
+
+This token is embedded in a **connection URI** (Uniform Resource Identifier) that looks like:
+
+```
+morphik://<owner_id>:<auth_token>@<api_base_url>
+```
+
+- `<owner_id>`: The user or app owner identifier
+- `<auth_token>`: The JWT token string
+- `<api_base_url>`: The API hostname and port
+
+The Morphik clients and SDKs extract and use this token for all authenticated requests.
+
+
+## 2. Obtaining Your Auth Token
+
+### Morphik Console & Hosted Service
+
+When you sign up for Morphik's hosted platform, your auth token is part of the Morphik URI you receive in your account dashboard. Use this URI when initializing clients or SDKs.
+
+### Development Environment
+
+When running Morphik locally (for development or testing), a default URI usually points to `http://localhost:8000` and may allow development-mode autofilled tokens that are permissive for fast prototyping.
+
+### Programmatic URI Generation
+
+Morphik exposes API endpoints to generate auth URIs:
+
+- `/local/generate_uri` for local dev tokens (valid typically for 30 days)
+- `/cloud/generate_uri` for hosted tokens tied to your user/app ID
+
+These endpoints require appropriate credentials, especially on cloud.
+
+
+## 3. How Morphik Uses JWT Tokens
+
+Each JWT token encodes claims about your identity, permissions, and expiry. The server verifies the token on each request:
+
+- Valid signature using the server’s secret
+- Token expiration (`exp` claim) check
+- Permissions scoped per your role (developer, user, admin)
+
+Tokens can carry additional metadata, such as associated app IDs for multitenant scoping.
+
+### Development Mode
+
+In development mode (`dev_mode` configuration), Morphik skips cryptographic verification and grants full permissions for convenience. This should never be used in production.
+
+
+## 4. Sending Authenticated API Requests
+
+When making API calls directly (without SDK), include the JWT token in an HTTP header:
+
+```http
+Authorization: Bearer <auth_token>
+```
+
+**Example using Curl:**
+
+```bash
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  https://api.morphik.ai/retrieve/chunks \
+  -d '{"query": "Your search query", "k": 4}'
+```
+
+**Important:** Always protect your tokens. Never share them publicly or embed them in client-side scripts.
+
+
+## 5. Token Structure & Security Considerations
+
+Morphik JWT tokens typically contain:
+
+- `entity_id`: Your user or app identifier
+- `entity_type`: The type of entity (developer, user, app)
+- `permissions`: Access rights like `read`, `write`, `admin`
+- `exp`: Expiration timestamp
+- Optional `app_id`: Scoping your access to a specific application
+
+These tokens enable Morphik to authorize actions like document ingestion, retrieval, agent queries, and more.
+
+
+## 6. Development vs Production Differences
+
+- **Development:**
+  - Tokens may be fabricated without encryption
+  - Auth verification is permissive
+  - Base API URL defaults to `http://localhost:8000`
+
+- **Production:**
+  - Real JWT tokens must be securely generated
+  - Token signature and expiry are enforced
+  - API base URL typically points to your hosted Morphik endpoint
+
+
+## 7. Example User Flow: Authenticating with the Python SDK
+
+```python
+from morphik import Morphik
+
+# Your Morphik authentication URI from hosted account
+morphik_uri = "morphik://owner123:eyJhbGciOiJIUzI1NiIs...@api.morphik.ai"
+
+# Initialize the client with authentication
+client = Morphik(morphik_uri)
+
+# Ingest a document while authenticated
+doc = client.ingest_text("This is my confidential document.")
+
+# Query with authenticated context
+results = client.query("Find key points in the document.")
+print(results.completion)
+```
+
+
+## 8. Common Pitfalls and Tips
+
+- **Missing Authorization Header:** API calls without the auth header will be rejected with `401` status.
+- **Expired Tokens:** Tokens have limited lifetimes; renew or generate new ones as needed.
+- **Token Scope:** Using tokens linked to incorrect app IDs may cause permission errors.
+- **Development Tokens:** Avoid deploying development mode tokens in production.
+
+
+## 9. Troubleshooting Authentication Issues
+
+- Verify your Morphik URI includes a valid token and correct base URL.
+- Check the token expiration date inside your JWT.
+- Use tools like [jwt.io](https://jwt.io/) to decode and inspect your JWT.
+- For cloud usage, ensure your user has appropriate permissions.
+- If you see HTTP 401 errors, confirm your `Authorization` header is correctly formatted.
+
+
+## 10. Additional References
+
+- [Getting Started: Signing Up for Morphik (Hosted Service)](/getting-started/install-configure-morphik/cloud-signup)
+- [Using the Morphik Console](/getting-started/first-steps-and-validation/using-the-morphik-console)
+- [Python SDK Authentication & Configuration](/sdks/getting-started/auth-config)
+- [Auth Migration and Updates](/getting-started/install-configure-morphik/auth-migration-steps)
+
+
+---
+
+## Appendix: Technical Notes for Developers
+
+The Morphik client extracts the auth token internally by parsing the connection URI. The token is then added as the Bearer token in the HTTP `Authorization` header for all REST requests.
+
+
+### Token Extraction Example (React/JavaScript)
+
+```javascript
+import { extractTokenFromUri } from "@/lib/utils";
+
+const morphikUri = "morphik://user:eyJhbGciOiJI...@api.morphik.ai";
+const authToken = extractTokenFromUri(morphikUri);
+
+// Use authToken as Bearer token in API calls
+```
+
+
+### Token Verification Server Side
+
+On the server, Morphik uses a middleware to verify tokens for every protected endpoint:
+
+- Validates the JWT against server secret
+- Enforces expiration
+- Extracts permissions and user/app context
+
+If verification fails, a `401 Unauthorized` or `403 Forbidden` error is returned.
+
+
+---
+
+Morphik's modern token-based authentication ensures secure, scalable access control for all your document workflows and AI-enhanced queries, empowering you to interact seamlessly while safeguarding your valuable data.

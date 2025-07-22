@@ -1,0 +1,107 @@
+---
+title: "What is Morphik?"
+description: "Learn what makes Morphik unique as an AI-native toolset for unstructured and multimodal documents. This page highlights the core value—bringing together powerful search, knowledge graphs, and metadata extraction into a single, developer-friendly experience."
+---
+
+# What is Morphik?
+
+Morphik is a groundbreaking AI-native toolset designed to empower developers, data scientists, and product teams to efficiently work with complex, unstructured, and multimodal documents. By seamlessly merging advanced search, knowledge graph construction, and metadata extraction, Morphik transforms how you ingest, explore, and query rich, visually contextual information in your applications.
+
+---
+
+## The Unique Value of Morphik
+
+Modern AI applications often struggle with document complexity: from long, visually rich PDFs to multimedia files containing embedded images, tables, and diagrams. Traditional systems fracture workflows across separate tools, losing visual context and faltering on accuracy and scalability.
+
+Morphik overcomes these challenges by unifying powerful core capabilities into a single, developer-friendly experience:
+
+- **Multimodal Search:** Through advanced techniques like ColPali, Morphik understands visual content alongside text, allowing you to search across text, images, PDFs, and videos with a single API.
+- **Knowledge Graphs:** Build fast, scalable domain-specific knowledge graphs with a single line of code to enrich your AI workflows and gain structured insights.
+- **Metadata Extraction:** Extract detailed metadata using rules-driven extraction engines that capture layout, bounding boxes, classification, and labels, preserving visual and structural document context.
+
+By integrating these features, Morphik lets you build end-to-end AI applications that truly comprehend the data, not just text snippets.
+
+---
+
+## Core Capabilities Explained
+
+### 1. Multimodal Document Ingestion & Search
+Morphik’s ingestion pipeline accommodates complex document types that combine text with visuals. Instead of fragmenting documents into brittle text-only representations, Morphik employs multimodal embedding models to capture semantic meanings, visual layouts, and relational metadata.
+
+- Search can incorporate both visual and textual cues, making queries like "show me the diagram explaining the screw placement in section 3" possible and precise.
+- Supports a wide variety of document types, including scanned PDFs, presentations, videos, and more.
+
+### 2. Knowledge Graph Construction
+Morphik enables you to extract entities, relationships, and domain-specific elements from your documents, assembling them into knowledge graphs that:
+
+- Provide a unified semantic layer atop your data
+- Support advanced querying, visualization, and reasoning
+- Accelerate search relevance by leveraging graph-augmented context
+
+Its battle-tested pipelines and flexible prompt customization make graph-building fast and reliable.
+
+### 3. Fast and Scalable Metadata Extraction
+Metadata powers the intelligence behind Morphik’s understanding of your content:
+
+- Bounding boxes keep track of exact spatial locations of text and objects
+- Labels and classifications preserve semantic roles (e.g., header, table, caption)
+- Rules-driven engines enable fine-grained and extensible metadata capture
+
+This allows AI models to reason not just with raw text but with structured document context, improving answer quality and user experience.
+
+---
+
+## How Morphik Fits Into Your Workflow
+
+Developers can interact with Morphik using multiple interfaces tailored to different needs:
+
+- **Morphik Console**: A web-based UI for manual document uploads, management, and chat-based exploration.
+- **Python SDK**: Programmatic control over ingestion, knowledge graph operations, semantic search, and retrieval-augmented generation with synchronous and asynchronous options.
+- **REST API**: Enables integration into your custom pipelines and platforms.
+
+This flexibility lets you choose the best interface for your workflow, from prototyping to production.
+
+---
+
+## Getting Started with Morphik
+
+1. **Sign up for the hosted Morphik service** to explore features with a generous free tier.
+2. **Try the Python SDK** to quickly ingest documents and perform semantic queries:
+
+```python
+from morphik import Morphik
+
+morphik = Morphik("<your-morphik-uri>")
+morphik.ingest_file("path/to/document.pdf")
+response = morphik.query("What is the main specification of screw 14-A?")
+print(response.completion)
+```
+
+3. **Explore the Morphik Console** to upload files, monitor processing, and chat with your knowledge base.
+
+4. **Learn about knowledge graphs** by building and querying graphs programmatically or via the console.
+
+---
+
+## Practical Benefits
+
+- **Improved Accuracy**: True multimodal understanding avoids common pitfalls of text-only systems.
+- **Scalability**: Handles large, complex documents without the overhead of fragile pipelines.
+- **Developer Productivity**: Single platform reduces integration complexity and accelerates product development.
+- **Cost Efficiency**: Persistent caching and efficient embeddings reduce infrastructure costs.
+
+---
+
+## Further Reading and Resources
+
+- [Why Choose Morphik?](overview/intro-value/why-morphik) — Learn about Morphik's unique innovations over traditional AI stacks.
+- [Quick Start: Using Morphik](overview/feature-overview/quickstart) — Walkthrough to get your first ingestion and search running.
+- [Building Knowledge Graphs](guides/knowledge-graphs/build-knowledge-graph) — Deep dive into knowledge graph creation and use.
+- [Morphik Console Guide](getting-started/first-steps-and-validation/using-the-morphik-console) — How to use the web interface effectively.
+- [Python SDK Documentation](sdks/python/README.md) — Detailed info for programmatic usage.
+
+---
+
+## Summary
+
+Morphik uniquely bridges the gap between raw unstructured data and actionable AI insights by providing a unified toolset for multimodal document ingestion, knowledge graph building, and metadata extraction—all wrapped in an intuitive, developer-friendly experience. Whether you’re building a standalone AI assistant or integrating complex document workflows, Morphik equips you to deliver higher accuracy, richer understanding, and scalable solutions with confidence.

@@ -1,0 +1,257 @@
+---
+title: "Cache-Augmented Generation & Fast Retrieval"
+description: "Drastically speed up repeated generation and reduce compute usage via persistent caches. Learn to create, persist, and query cache-augmented workflows using provided SDKs, with troubleshooting tips for scalability."
+---
+
+# Cache-Augmented Generation & Fast Retrieval Guide
+
+Efficiently accelerate repeated generation tasks and reduce compute resources by leveraging Morphik's persistent caching capabilities. This guide walks you through creating, managing, and querying cache-augmented workflows powered by optimized models, using Morphik's Python SDK and REST API. Learn best practices for cache creation, adding documents, updating caches with new data, and querying cached models to get fast, context-rich completions.
+
+---
+
+## 1. Understanding Cache-Augmented Generation
+
+Cache-Augmented Generation (CAG) uses a pre-populated, persistent cache to store model context derived from your documents. When you query the cache, it reuses this stored context (e.g., key-value model states) to drastically speed up generation and reduce compute, since the model doesn’t need to re-process the entire input from scratch.
+
+### Value Proposition
+- **Latency Reduction:** Responses are generated faster because the cache holds pre-processed context.
+- **Cost Savings:** Minimizes repeated model computation, cutting resource use.
+- **Incremental Updates:** You can add new documents dynamically to keep the cache fresh without rebuilding from zero.
+
+## 2. Prerequisites
+
+- You have access to a Morphik deployment (cloud or self-hosted).
+- The Morphik Python SDK is installed and configured.
+- You have documents ingested into your Morphik instance.
+- You have access to suitable GGUF model files for your cache (e.g., Llama 2 variants).
+
+<Check>
+Ensure your model files match the version expected by the cache.
+</Check>
+
+## 3. Workflow Overview
+
+| Step                             | Description                             |
+|---------------------------------|-------------------------------------|
+| Document Ingestion              | Ingest your documents into Morphik. |
+| Cache Creation                 | Create a persistent cache with selected documents and model. |
+| Cache Update                  | Refresh cache with newly added or updated documents. |
+| Query Cache                    | Run prompt queries over the cached context for fast generation. |
+| Add Documents to Cache      | Add new documents on-demand and update the cache. |
+
+## 4. Practical Step-by-Step Guide
+
+<Steps>
+<Step title="Ingest Documents">
+Before creating a cache, ingest your documents into Morphik.
+
+```python
+from morphik import Morphik
+
+db = Morphik("<YOUR_MORPHIK_URI>")
+
+doc_text = """
+Artificial Intelligence is a field of computer science that focuses on...
+"""
+
+doc = db.ingest_text(doc_text, metadata={"category": "technology", "topic": "AI"})
+print(f"Ingested Document ID: {doc.external_id}")
+```
+
+**Result:** Document stored and indexed in Morphik.
+</Step>
+
+<Step title="Create a Cache">
+Create a cache bound to the documents and your model.
+
+```python
+cache_result = db.create_cache(
+    name="ai_cache",
+    model="llama2",
+    gguf_file="llama-2-7b-chat.Q4_K_M.gguf",
+    docs=[doc.external_id],
+)
+print("Cache created successfully")
+```
+
+- `name`: Unique cache identifier.
+- `model`: Internal model id.
+- `gguf_file`: Path to the GGUF model weights.
+- `docs`: List of document IDs included.
+
+**Result:** Cache instance ready with embedded document context.
+</Step>
+
+<Step title="Retrieve and Update Cache">
+Retrieve your cache and update it if new documents are ingested.
+
+```python
+cache = db.get_cache("ai_cache")
+
+# Update to incorporate any new documents matching cache filters
+cache.update()
+print("Cache updated")
+```
+
+**Tip:** Regularly update caches to keep information current.
+</Step>
+
+<Step title="Query the Cache">
+Run a fast prompt query that uses the cached document context.
+
+```python
+response = cache.query(
+    "What are the types of artificial intelligence?",
+    max_tokens=150,
+    temperature=0.7
+)
+print("Answer:", response.completion)
+```
+
+- `query`: Your prompt/question.
+- Optional parameters `max_tokens` and `temperature` control generation length and randomness.
+
+**Result:** Quick, relevant completions leveraging cached knowledge.
+</Step>
+
+<Step title="Add More Documents to Cache">
+Add documents without recreating the cache.
+
+```python
+additional_doc = db.ingest_text(
+    "Reinforcement learning lets agents learn from rewards.",
+    metadata={"category": "technology", "topic": "AI", "subtopic": "reinforcement learning"}
+)
+
+cache.add_docs([additional_doc.external_id])
+cache.update()
+print("Cache updated with new document")
+```
+
+**Result:** Cache expands context with new data, instantly available for queries.
+</Step>
+</Steps>
+
+## 5. Example Usage
+
+Here is a complete example combining the main operations:
+
+```python
+import os
+from dotenv import load_dotenv
+from morphik import Morphik
+
+load_dotenv()
+db = Morphik(os.getenv("MORPHIK_URI"), timeout=10000, is_local=True)
+
+# Ingest document
+long_document = """
+# AI and ML Overview
+... (long text) ...
+"""
+doc = db.ingest_text(long_document, metadata={"category": "technology"})
+
+# Create cache
+cache_result = db.create_cache(
+    name="ai_overview_cache",
+    model="llama2",
+    gguf_file="llama-2-7b-chat.Q4_K_M.gguf",
+    docs=[doc.external_id],
+)
+
+# Get and update cache
+cache = db.get_cache("ai_overview_cache")
+cache.update()
+
+# Query cache
+response = cache.query("What are the types of AI?", max_tokens=200)
+print(response.completion)
+
+# Add more docs
+additional_doc = db.ingest_text(
+    "Reinforcement learning involves an agent learning via rewards.",
+    metadata={"topic": "AI"}
+)
+cache.add_docs([additional_doc.external_id])
+cache.update()
+```
+
+## 6. Best Practices and Tips
+
+- Use **filters or explicit document IDs** on cache creation to control included data.
+- Plan cache updates after adding new documents to maintain relevance.
+- Keep GGUF model files consistent with Morphik's supported model versions.
+- Monitor cache size and document counts to optimize performance.
+- Use **cache names** that clearly indicate scope or purpose.
+
+## 7. Troubleshooting
+
+<AccordionGroup title="Common Cache Issues">
+<Accordion title="Cache Creation Fails with "No Documents"">
+Check that your document IDs or filters actually match existing documents. Confirm documents are ingested and visible to your user context.
+</Accordion>
+<Accordion title="Cache Query Throws Permission Error">
+Validate your authentication token and user role permissions. You must have access rights to query the cache's documents.
+</Accordion>
+<Accordion title="Cache Does Not Update with New Documents">
+Ensure you're calling the `update()` method after adding documents. The cache must be refreshed to incorporate new data.
+</Accordion>
+<Accordion title="Model Loading or GGUF File Errors">
+Verify your GGUF file path, model compatibility, and GPU resources if applicable. Consult logs for detailed errors.
+</Accordion>
+</AccordionGroup>
+
+## 8. How the Cache Works (Technical Overview)
+
+The cache uses a model-specific key-value store of prior token states (KV cache) representing document context.
+
+- When creating, it loads documents and compiles a system prompt with document content.
+- The model processes this system prompt once and saves the KV cache state.
+- When querying, the cache resets the model state to this cached KV state then processes only the user's query tokens.
+- Adding documents appends new content to the existing KV cache state incrementally.
+
+This method avoids repeated computation and accelerates query response while maintaining context accuracy.
+
+## 9. Diagram: Cache-Augmented Query Flow
+
+```mermaid
+flowchart TD
+
+  UserPrompt["User Query Prompt"] --> QueryCache
+  subgraph Cache Creation
+    Docs["Documents Loaded & Aggregated"] --> SystemPrompt["Build System Prompt with Docs"]
+    SystemPrompt --> Model["Load / Initialize Model"]
+    Model --> KVCache["Generate & Save KV Cache State"]
+    KVCache --> Cache["Persistent Cache Storage"]
+  end
+
+  QueryCache["Query Cache"] -->|Load KV Cache State| Model
+  Model -->|Generate Completion Tokens| Completion["Generated Completion"]
+  Completion --> ReturnResult("Return Response to User")
+
+  UpdateCache["Add New Documents"] --> AddDocsToCache["Append New Doc Tokens"]
+  AddDocsToCache --> KVCache
+
+  classDef process fill:#82b1ff,stroke:#1a237e,stroke-width:2px;
+  Model,KVCache,SystemPrompt,QueryCache,UpdateCache,AddDocsToCache class process;
+```
+
+## 10. Next Steps & Related Documentation
+
+- [Ingesting Documents of All Types](https://docs.morphik.org/guides/core-workflows/ingest-documents): Learn how to add documents to Morphik.
+- [Multimodal Search & Retrieval](https://docs.morphik.org/guides/core-workflows/multimodal-search): Combine cache queries with semantic search.
+- [Building a Knowledge Graph](https://docs.morphik.org/guides/knowledge-graphs/build-knowledge-graph): Expand insights from cached content to graph connections.
+- [Installing Morphik Python SDK](https://docs.morphik.org/getting-started/install-configure-morphik/install-python-sdk): Set up your SDK.
+- [Troubleshooting Installation Problems](https://docs.morphik.org/getting-started/troubleshooting-help/common-install-issues): Resolve common setup issues.
+
+---
+
+<Tip>
+Cache-augmented generation is especially powerful for scenarios where queries repeatedly target the same core set of documents, such as interactive research assistants, knowledge base Q&A, or chatbots with narrow domain focus.
+</Tip>
+
+<Note>
+Always keep your cache updated with relevant new content to ensure your queries reflect the latest knowledge.
+</Note>
+
+---

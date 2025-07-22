@@ -1,0 +1,324 @@
+---
+title: "Knowledge Graphs"
+description: "Endpoints to create, update, and query knowledge graphs built from document collections. Describe input schemas for domain graph definition, response formats for graph queries, and example workflows for extracting structured relationships."
+---
+
+# Knowledge Graphs API Reference
+
+Unlock deeper insights and structured knowledge from your document collections using Morphik's Knowledge Graphs API. These endpoints empower you to create, update, and query knowledge graphs that represent entities and relationships extracted from your data. By turning unstructured content into connected graphs, you gain powerful semantic navigation, contextual querying, and visual exploration capabilities.
+
+---
+
+## Overview
+
+Morphik's Knowledge Graphs API allows developers to build domain-specific graphs from ingested documents. Graphs consist of entities (nodes) and relationships (edges) that capture structured information hidden within your data. This page focuses on how to create these graphs, update them with new documents, and query the graphs to retrieve meaningful insights.
+
+You will learn about:
+
+- Input schemas for defining graph creation and updating
+- Response formats for graph queries
+- How to extract structured relationships using prompt overrides
+- Example user workflows for building and using knowledge graphs
+
+---
+
+## Base URLs and Authentication
+
+All endpoints are accessible through the Morphik API base URL with appropriate authorization. Typically, authentication uses bearer tokens attached in the `Authorization` header. Refer to the [Authentication Overview](https://morphik.ai/docs/api-reference/api-authentication-requests/auth-overview) for details.
+
+---
+
+## Core Concepts
+
+- **Graph**: A named collection of entities and relationships extracted from a set of documents.
+- **Entity**: A distinct object or concept identified in the text, labeled with a type (e.g., Dataset, Method, Task).
+- **Relationship**: A typed connection between two entities representing a semantic link.
+- **Document**: Source content ingested into Morphik from which entities and relations are extracted.
+- **Prompt Overrides**: User-defined custom prompt templates and examples to tailor entity/relationship extraction to your domain.
+
+---
+
+## Creating a Knowledge Graph
+
+Creating a knowledge graph involves specifying the documents to be used (via filters or explicit IDs) and optionally providing prompt overrides to guide entity and relationship extraction.
+
+### Request Parameters
+
+| Parameter         | Type                 | Description                                                                                   |
+|-------------------|----------------------|-----------------------------------------------------------------------------------------------|
+| `name`            | string               | Unique name for the knowledge graph to create.                                               |
+| `filters`         | object (optional)    | Metadata filters to select documents, e.g., `{ "category": "research" }`.                |
+| `documents`       | array of strings     | Explicit list of document IDs to include in the graph.                                       |
+| `prompt_overrides`| object (optional)    | Customizations for entity extraction and resolution prompts, using `GraphPromptOverrides`.    |
+
+### Example (Python SDK)
+
+```python
+from morphik import Morphik
+from morphik.models import (EntityExtractionPromptOverride, EntityExtractionExample, GraphPromptOverrides)
+
+# Initialize client
+morphik = Morphik("morphik://owner_id:token@api.morphik.ai")
+
+# Define custom entity examples
+entity_examples = [
+    EntityExtractionExample(label="AI", type="Concept"),
+    EntityExtractionExample(label="Machine Learning", type="Method")
+]
+
+# Create prompt override
+entity_override = EntityExtractionPromptOverride(examples=entity_examples)
+graph_overrides = GraphPromptOverrides(entity_extraction=entity_override)
+
+# Create graph
+graph = morphik.create_graph(
+    name="ai_research_graph",
+    filters={"category": "research"},
+    prompt_overrides=graph_overrides
+)
+
+print(f"Created graph: {graph.name} with {len(graph.entities)} entities")
+```
+
+### Outcome
+
+Upon successful creation, the graph contains entities and relationships extracted from the specified documents. The creation process asynchronously invokes a backend extraction pipeline with your prompt overrides guiding entity and relation detection.
+
+---
+
+## Updating an Existing Graph
+
+Add new documents or metadata filters to an existing graph to keep it current with fresh data.
+
+### Request Parameters
+
+| Parameter              | Type              | Description                                                        |
+|------------------------|-------------------|--------------------------------------------------------------------|
+| `name`                 | string            | The name of the existing graph to update.                         |
+| `additional_filters`   | object (optional) | Additional metadata filters to select new documents.              |
+| `additional_documents` | array (optional)  | Additional document IDs to include in the update.                 |
+| `prompt_overrides`     | object (optional) | Optional prompt override customizations for this update run.       |
+
+### Example (Python SDK)
+
+```python
+updated_graph = morphik.update_graph(
+    name="ai_research_graph",
+    additional_filters={"date": "2025-01-01+"},  # Documents from 2025 onward
+    additional_documents=["doc123", "doc124"]
+)
+
+print(f"Updated graph now has {len(updated_graph.entities)} entities")
+```
+
+### Notes
+
+- The update is incremental: new documents matching filters or listed explicitly are ingested and their information added to the graph.
+- If no new documents are found, the graph's processing status is marked as completed without changes.
+
+---
+
+## Querying Knowledge Graphs
+
+Use graph queries to explore entities, paths, and subgraphs, unlocking linked information that enhances your search and understanding.
+
+### Supported Query Types
+
+| Query Type     | Description                                                                                      | Required Start Nodes                  |
+|----------------|------------------------------------------------------------------------------------------------|--------------------------------------|
+| `list_entities`| Find entities semantically similar to a search term (useful for discovery).                     | Single search term                    |
+| `entity`       | Retrieve details for a specific entity by its ID or label.                                     | Single entity ID or label            |
+| `path`         | Find connection paths between two entities.                                                    | Exactly two entity IDs or labels     |
+| `subgraph`     | Extract a local neighborhood (connected nodes and edges) around a central entity.              | Single entity ID or label            |
+
+### Query Parameters
+
+| Parameter   | Type               | Description                                                                                      |
+|-------------|--------------------|------------------------------------------------------------------------------------------------|
+| `query_type`| string (enum)      | The type of query: `list_entities`, `entity`, `path`, `subgraph`.                              |
+| `start_nodes`| array of strings   | Entities or search terms to start the query with, formats vary by `query_type`.                |
+| `max_depth` | integer (optional) | For `path` and `subgraph`, maximum hops to explore (default: 3).                              |
+| `graph_name`| string (optional)  | Name of the graph to query. Defaults to `graph_main` or the user's only graph if omitted.      |
+| `end_user_id`| string (optional) | Scope query to a specific end-user (if multi-tenant usage).                                   |
+
+### Example: Entity Details
+
+Retrieve details about a single entity:
+
+```python
+entity_info_json = await db.knowledge_graph_query(
+    query_type="entity",
+    start_nodes=["Convolutional Neural Network"],
+    graph_name="scier_default"
+)
+
+entity_info = json.loads(entity_info_json)
+print(f"Entity ID: {entity_info['id']}")
+print(f"Type: {entity_info['type']}")
+```
+
+### Example: Find Paths Between Entities
+
+```python
+path_result_json = await db.knowledge_graph_query(
+    query_type="path",
+    start_nodes=["BERT", "Machine Translation"],
+    max_depth=2,
+    graph_name="scier_default"
+)
+
+paths = json.loads(path_result_json)["paths"]
+for p in paths:
+    print(" -> ".join(p))
+```
+
+### Example: List Entities Similar to a Term
+
+```python
+similar_entities_json = await db.knowledge_graph_query(
+    query_type="list_entities",
+    start_nodes=["Dataset"],
+    graph_name="scier_default"
+)
+
+entities = json.loads(similar_entities_json)
+for ent in entities:
+    print(f"{ent['label']} ({ent['type']}) - Score: {ent['similarity_score']}")
+```
+
+---
+
+## Prompt Overrides for Domain-Specific Graph Extraction
+
+Customize graph extraction by providing examples and instructions, tailoring entity and relationship recognition to your domain.
+
+### Entity Extraction Override
+
+Define specific entity types and examples to improve recognition accuracy.
+
+```python
+from morphik.models import EntityExtractionPromptOverride, EntityExtractionExample
+
+entity_override = EntityExtractionPromptOverride(
+    prompt_template="Your task is to extract entities and relationships",
+    examples=[
+        EntityExtractionExample(label="ImageNet", type="Dataset"),
+        EntityExtractionExample(label="BERT", type="Method"),
+        EntityExtractionExample(label="Named Entity Recognition", type="Task")
+    ]
+)
+```
+
+### Using Prompt Overrides in Graph Creation
+
+```python
+graph_overrides = GraphPromptOverrides(entity_extraction=entity_override)
+graph = morphik.create_graph(
+    name="custom_scientific_graph",
+    filters={"field": "computer_vision"},
+    prompt_overrides=graph_overrides
+)
+```
+
+> Prompts help tune the extraction process for better precision and recall in your domain.
+
+---
+
+## Response Data Models
+
+### Graph Object
+
+A graph JSON object contains:
+
+- `name`: Graph name
+- `entities`: List of entity objects (`id`, `label`, `type`, `properties`, `document_ids`)
+- `relationships`: List of relationship objects (`id`, `source_id`, `target_id`, `type`)
+- `document_ids`: Documents included in the graph
+- `created_at`, `updated_at`: Optional timestamps
+- `system_metadata`: Internal status and workflow information
+
+### Entity Object
+
+| Field          | Type    | Description                                   |
+|----------------|---------|-----------------------------------------------|
+| `id`           | string  | Unique identifier                             |
+| `label`        | string  | Text label of the entity                      |
+| `type`         | string  | Entity type (e.g., Dataset, Method, Task)    |
+| `properties`   | object  | Optional key-value properties                 |
+| `document_ids` | array   | IDs of documents where entity was found      |
+
+### Relationship Object
+
+| Field      | Type   | Description                               |
+|------------|--------|-------------------------------------------|
+| `id`       | string | Unique relationship identifier            |
+| `source_id`| string | ID of the source entity                   |
+| `target_id`| string | ID of the target entity                   |
+| `type`     | string | Relationship type (e.g., Used-For, Part-Of)|
+
+---
+
+## Client SDK Example Workflow
+
+### 1. Ingest Documents
+
+```python
+from morphik import Morphik
+
+db = Morphik("morphik://owner_id:token@api.morphik.ai")
+doc = db.ingest_text("Neural networks are transformative.", metadata={"domain": "AI"})
+print(f"Ingested document with ID: {doc.external_id}")
+```
+
+### 2. Create Knowledge Graph
+
+```python
+graph = db.create_graph(name="ai_graph", filters={"domain": "AI"})
+print(f"Created graph: {graph.name} with {len(graph.entities)} entities")
+```
+
+### 3. Query the Graph
+
+```python
+response = db.query(
+    query="What methods are used for image classification?",
+    graph_name="ai_graph",
+    hop_depth=2
+)
+
+print(response.completion)
+```
+
+### 4. Update the Graph with New Documents
+
+```python
+updated_graph = db.update_graph(
+    name="ai_graph",
+    additional_documents=["new_doc_id"]
+)
+print(f"Graph updated. Total entities: {len(updated_graph.entities)}")
+```
+
+---
+
+## Troubleshooting and Best Practices
+
+- **No documents found when creating/updating graph:** Verify filters or document IDs are correct and documents exist.
+- **Graph query returns empty or errors:** Confirm the graph exists and `start_nodes` are valid entity IDs or labels.
+- **Prompt overrides not reflected:** Ensure your overrides are properly formed and passed during the graph creation call.
+- **Performance:** Use filters to scope documents to reduce processing time.
+- **Versioning:** Keep prompt overrides updated to improve extraction quality over time.
+
+---
+
+## Additional Resources
+
+- [Python SDK Usage for Knowledge Graphs](https://morphik.ai/docs/sdks/core-workflows/knowledge-graphs)
+- [Building Knowledge Graphs Guide](https://morphik.ai/docs/guides/knowledge-graphs/build-knowledge-graph)
+- [Querying Knowledge Graphs Guide](https://morphik.ai/docs/guides/knowledge-graphs/query-graph)
+- [Prompt Overrides for Custom Extraction](https://morphik.ai/docs/guides/knowledge-graphs/advanced-graph-operations)
+- [Morphik Authentication Overview](https://morphik.ai/docs/api-reference/api-authentication-requests/auth-overview)
+
+For hands-on examples, refer to the official script in `evaluations/Science graphs (SciER)/scier_evaluation.py` and the SDK example in `examples/knowledge_graphs.py` in the Morphik repository.
+
+---

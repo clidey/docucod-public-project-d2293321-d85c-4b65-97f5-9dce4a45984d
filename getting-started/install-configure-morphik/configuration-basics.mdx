@@ -1,0 +1,209 @@
+---
+title: "Basic Configuration"
+description: "Explains initial configuration options, such as setting up environment variables, editing config files, and supplying connection details or API tokens. Also discusses where to find or set up morphik.toml, and the role of config.py in Morphik's behavior."
+---
+
+# Basic Configuration
+
+Configure Morphik by setting up environment variables, editing the `morphik.toml` configuration file, and supplying connection details and API tokens. This page guides you through the initial setup necessary to customize Morphik’s behavior before running it, explaining how configuration components interplay and where key settings reside.
+
+---
+
+## 1. Configuration Overview
+
+Morphik’s configuration drives its runtime behavior, including authentication, database connections, embedding providers, API endpoints, and more. Configuration is split mainly between environment variables and the TOML configuration file (`morphik.toml`). Both must be set correctly for Morphik to function properly.
+
+
+- **Environment Variables**: Sensitive data such as API keys and secrets are managed through environment variables, commonly loaded by `.env` files or injected in deployment environments.
+- **`morphik.toml` File**: A structured configuration file containing core settings like server host & port, feature toggles, and model selections.
+- **Configuration Code (`config.py`)**: Internal to Morphik, this module loads and validates all settings using Pydantic.
+
+
+<Tip>
+Understanding the relationship between environment variables and the TOML config helps prevent misconfigurations. Secrets should *never* be hardcoded in source files but managed securely via environment variables.
+</Tip>
+
+
+## 2. Locating and Editing `morphik.toml`
+
+The `morphik.toml` is the primary configuration file typically located at the root of your Morphik installation directory.
+
+### Steps to Update `morphik.toml`:
+
+1. Navigate to the Morphik project root.
+2. Open `morphik.toml` in your preferred text editor.
+3. Make necessary changes to sections such as `[api]`, `[auth]`, `[database]`, `[embedding]`, and `[graph]`.
+4. Save changes.
+
+
+### Typical Configuration Sections:
+
+```toml
+[api]
+host = "0.0.0.0"
+port = 8000
+reload = true
+
+[auth]
+jwt_algorithm = "HS256"
+dev_mode = false
+
+[database]
+provider = "postgres"
+name = "morphik_db"
+pool_size = 20
+
+[embedding]
+model = "openai/embed-001"
+dimensions = 1536
+similarity_metric = "cosine"
+
+[graph]
+mode = "local"
+model = "gpt-4"
+enable_entity_resolution = true
+
+[storage]
+provider = "local"
+storage_path = "/var/morphik/storage"
+
+[vector_store]
+provider = "pgvector"
+
+[rules]
+batch_size = 4096
+model = "finetuned-rules-model"
+```
+
+
+<Note>
+Always keep a backup of your original `morphik.toml` before making any edits to facilitate rollback.
+</Note>
+
+
+## 3. Setting Environment Variables
+
+Environment variables hold confidential and dynamic values necessary for Morphik to operate securely and correctly.
+
+### Required Environment Variables:
+
+- `MORPHIK_URI`: The connection URI to your Morphik instance, especially used by clients.
+- `JWT_SECRET_KEY`: Secret for JWT token signing (required if `dev_mode` is false).
+- `SESSION_SECRET_KEY`: Secret key for session management.
+- `POSTGRES_URI`: Database connection string when using Postgres.
+- API keys for third-party services like:
+  - `OPENAI_API_KEY`
+  - `AWS_ACCESS_KEY` and `AWS_SECRET_ACCESS_KEY` if using S3 storage
+  - `MORPHIK_GRAPH_API_KEY` if using graph API in `api` mode
+
+
+### Loading Environment Variables with `.env` File
+Use a `.env` file near the Morphik root or your application directory. For example:
+
+```text
+MORPHIK_URI=http://localhost:8000
+JWT_SECRET_KEY=supersecretjwtkey
+SESSION_SECRET_KEY=supersecretkeyforsession
+POSTGRES_URI=postgresql+asyncpg://user:password@localhost:5432/morphik_db
+OPENAI_API_KEY=sk-xxxxxx
+AWS_ACCESS_KEY=AKIA...
+AWS_SECRET_ACCESS_KEY=secret
+MORPHIK_GRAPH_API_KEY=graphapikey
+```
+
+Use `python-dotenv` (as Morphik does) or your platform’s environment variable management to load these securely.
+
+
+## 4. Configuration via `config.py`
+
+The `config.py` file in the Morphik source code encapsulates loading, validating, and exposing the complete configuration using Pydantic models.
+
+- It merges the environment variables and the values from `morphik.toml`.
+- Validates mandatory fields and enforces necessary defaults.
+- Implements sanity checks for providers and required API keys.
+
+
+### How it Works:
+
+- On startup, `get_settings()` uses cached loading of configuration values.
+- Environment variables override conflicting values from `morphik.toml`.
+- Provider types are validated (e.g., database provider must be `postgres`).
+- Missing critical fields throw errors early to prevent runtime problems.
+
+
+<Info>
+You generally do not need to modify `config.py` unless customizing or extending Morphik’s core features.
+</Info>
+
+
+## 5. Typical Configuration Parameters Explained
+
+| Parameter                    | Purpose                                                                                             |
+|------------------------------|---------------------------------------------------------------------------------------------------|
+| `JWT_SECRET_KEY`             | Secret key to sign JSON Web Tokens; ensures secure authentication.                                |
+| `POSTGRES_URI`               | Connection string for PostgreSQL backend storage.                                                 |
+| `COMPLETION_MODEL`           | LLM model used for text completions (e.g., `litellm` based model name).                           |
+| `EMBEDDING_MODEL`            | Model used for embedding generation, crucial for search accuracy.                                |
+| `GRAPH_MODE`                 | Selects whether knowledge graph runs locally or via API.                                         |
+| `STORAGE_PROVIDER`           | Where documents and files are stored (local filesystem or AWS S3).                               |
+| `VECTOR_STORE_PROVIDER`      | Vector DB provider type (e.g., `pgvector` for PostgreSQL based vector storage).                   |
+| `RULES_MODEL`                | Model to use for rules-based metadata extraction or document processing.                          |
+| `DEV_MODE`                   | Enables developer shortcuts, defaults, and disables strict security for easier testing.          |
+
+
+## 6. Best Practices and Tips
+
+- **Keep Secrets Out of Code:** Use environment variables for all secrets and keys.
+- **Validate After Editing:** After changing configuration, test Morphik with a simple run or health check.
+- **Use Version Control:** Include `morphik.toml` in your repository but exclude `.env` files.
+- **Backup Regularly:** Backup `morphik.toml` before changes.
+- **Dev Mode for Testing:** Enable `dev_mode = true` for quick local testing, but disable in production.
+- **Match Versions:** Ensure model names in the config match deployed model versions.
+
+
+## 7. Common Pitfalls
+
+- **Missing `POSTGRES_URI`**: Morphik requires a proper database URI for vector and document storage.
+- **Incomplete API Keys**: Without keys for embedding or graph API, relevant features fail.
+- **Incorrect Provider Names**: Typographical errors in provider names (e.g., 'postgres' vs 'postgress') cause startup failures.
+- **Loading Order**: Make sure environment variables are loaded before running.
+
+
+## 8. Verifying Configuration
+
+After configuring, run the following to verify setup:
+
+- Start Morphik service and monitor logs for errors.
+- Use the provided health check API or CLI commands to confirm that the system connects successfully to providers.
+
+
+## 9. References and Next Steps
+
+For deeper setup information and troubleshooting, see:
+
+- [Self-Hosting Morphik](https://morphik.ai/docs/getting-started/install-configure-morphik/self-hosting-guide)
+- [Installing Morphik Python SDK](https://morphik.ai/docs/getting-started/install-configure-morphik/install-python-sdk)
+- [Running Your First Query](https://morphik.ai/docs/getting-started/first-steps-and-validation/run-first-sdk-query)
+
+
+For configuration schema details, see the source code here:
+
+<Source url="https://github.com/morphik-org/morphik-core" paths={[{"path": "core/config.py", "range": "1-193"}]} />
+
+---
+
+# Summary
+This guide walks you through the essential steps to configure Morphik for your environment. You will learn how to edit and manage the `morphik.toml` file, set critical environment variables including API tokens and connection strings, and understand the role of the `config.py` module in loading and validating your configuration. Practical tips, common pitfalls, and verification methods help ensure reliable startup and operation.
+
+**Key sections covered:**
+- Configuration file (`morphik.toml`) editing
+- Managing sensitive environment variables
+- Understanding configuration loading and validation
+- Best practices and troubleshooting tips
+
+**Important links:**
+- [Self-Hosting Morphik Guide](https://morphik.ai/docs/getting-started/install-configure-morphik/self-hosting-guide)
+- [Installing Morphik Python SDK](https://morphik.ai/docs/getting-started/install-configure-morphik/install-python-sdk)
+- [Source code for config.py](https://github.com/morphik-org/morphik-core/blob/main/core/config.py)
+
+After completing this, users should proceed to running first queries and validating their Morphik deployment.

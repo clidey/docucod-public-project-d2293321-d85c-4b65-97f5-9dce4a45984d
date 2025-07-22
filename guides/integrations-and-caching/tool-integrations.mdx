@@ -1,0 +1,236 @@
+---
+title: "Connecting Morphik to Your Ecosystem"
+description: "Integrate Morphik with Google Drive, Slack, Confluence, and more. This hands-on guide explains how to set up connectors, automate ingestion from external sources, and orchestrate cross-platform workflows."
+---
+
+# Connecting Morphik to Your Ecosystem
+
+Integrate Morphik seamlessly with your existing tools like **Google Drive**, **Slack**, **Confluence**, and more. This practical guide walks you through setting up connectors, automating data ingestion from external platforms, and orchestrating workflows that span multiple services — enabling you to centralize document intelligence and accelerate insight discovery.
+
+---
+
+## 1. Why Connect Morphik to External Platforms?
+
+Morphik excels at processing, understanding, and querying complex multimodal documents. Yet, your most valuable data is often scattered across various systems your team already uses daily. Connecting Morphik to these sources enables:
+
+- **Automated ingestion** of relevant documents with minimal manual effort
+- **Continuous syncing** to keep Morphik’s knowledge base fresh and comprehensive
+- **Cross-platform workflows** leveraging Morphik’s AI-powered insights alongside your collaboration tools
+
+Imagine automatically pulling new company policies from Confluence, or ingesting all shared design files from a Slack channel — all without lifting a finger.
+
+<Check>
+Ensure you have appropriate permissions for the external platforms you want to connect, and have your Morphik environment already set up with valid authentication.
+</Check>
+
+## 2. Prerequisites
+
+Before proceeding, confirm the following:
+
+- You have access to Morphik Console or API credentials for your Morphik tenant.
+- You possess admin or integration-level credentials on the external platforms (e.g., Google Drive API credentials, Slack app tokens, Confluence API keys).
+- Your Morphik instance has outbound network access to the external services.
+- Basic familiarity with the Morphik Console or Python SDK is recommended.
+
+---
+
+## 3. Supported Connectors Overview
+
+Morphik offers direct connectors for widely used platforms:
+
+| Platform      | Connector Type        | Primary Use Case                         |
+| ------------- | --------------------- | -------------------------------------- |
+| Google Drive  | OAuth-based Connector | Automate ingestion of files & folders  |
+| Slack         | App Integration       | Synchronize conversations & shared files |
+| Confluence   | REST API Connector     | Import wiki pages and documents         |
+
+Additional connectors for other platforms can be integrated via the REST API or custom SDK workflows.
+
+---
+
+## 4. Setting Up Connectors
+
+The following are step-by-step procedures to connect Morphik to key platforms.
+
+### 4.1 Google Drive Integration
+
+Google Drive is a common repository for a variety of documents.
+
+#### Steps:
+
+1. **Create a Google Cloud project:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com).
+   - Create a new project dedicated for Morphik integration.
+
+2. **Enable Google Drive API:**
+   - In your project, navigate to "APIs & Services > Library".
+   - Search for "Google Drive API" and enable it.
+
+3. **Configure OAuth Credentials:**
+   - Go to "APIs & Services > Credentials".
+   - Create OAuth client ID credentials.
+   - Set the redirect URI to the Morphik Console URL for OAuth callbacks.
+
+4. **Authorize Morphik with Google Drive:**
+   - In Morphik Console under **Integrations > Connectors**
+   - Select Google Drive and initiate the OAuth flow.
+   - Approve requested scopes to allow Morphik to access your Drive files.
+
+5. **Configure ingestion settings:**
+   - Choose folders or entire drive.
+   - Set ingestion frequency (e.g., hourly, daily).
+   - Optionally configure metadata tagging (e.g., folder names as tags).
+
+6. **Start ingestion:** Morphik will automatically scan and ingest the selected Drive content, extracting multimodal metadata.
+
+<Info>
+Permissions must be granted carefully — Morphik requires read access but will not modify your files.
+</Info>
+
+### 4.2 Slack Integration
+
+Slack is often a vital source of shared knowledge embedded in messages, channels, and files.
+
+#### Steps:
+
+1. **Create a Slack App:**
+   - Visit https://api.slack.com/apps.
+   - Create a new app for your workspace.
+
+2. **Assign permissions:**
+   - Add required OAuth scopes such as `channels:history`, `files:read`, and `users:read`.
+
+3. **Install Slack App:**
+   - Install the app in your Slack workspace.
+   - Retrieve the OAuth token.
+
+4. **Add Slack Integration in Morphik:**
+   - In Morphik Console, navigate to **Integrations > Connectors**.
+   - Select Slack and input your OAuth token.
+   - Configure which channels to monitor or ingest from.
+
+5. **Set ingestion rules:**
+   - Define filters like channel names or message metadata.
+   - Schedule ingestion frequency.
+
+6. **Enable ingestion to capture new messages and shared files continuously.**
+
+<Warning>
+Slack rate limits apply; avoid ingesting overly large workspaces at too high a frequency.
+</Warning>
+
+### 4.3 Confluence Integration
+
+Confluence is widely used for internal documentation.
+
+#### Steps:
+
+1. **Create an API token in Confluence:**
+   - Log in to your Atlassian account.
+   - Generate an API token with read permissions.
+
+2. **Configure Confluence Connector in Morphik:**
+   - Access Morphik Console > **Integrations > Connectors**.
+   - Add the Confluence URL and API token.
+   - Choose spaces or pages for ingestion.
+
+3. **Set ingestion schedule:**
+   - Define sync intervals.
+
+4. **Start ingestion to pull in wiki pages as rich documents, preserving layout and images.**
+
+---
+
+## 5. Automating Ingestion and Updates
+
+Once connected, Morphik handles periodic polling and incremental ingestion:
+
+- **Delta updates:** Only new or modified documents are processed to optimize costs.
+- **Metadata tagging:** Source platform metadata (e.g., Slack channel names, Google Drive folder) are automatically applied.
+- **Error notifications:** The console provides alerts if connectors fail or require reauthorization.
+
+## 6. Orchestrating Cross-Platform Workflows
+
+Harnessing Morphik’s unified knowledge graph and search, you can build workflows that:
+
+- Search across documents from multiple platforms
+- Extract unified metadata and facts from disparate sources
+- Alert teams in Slack when critical knowledge changes
+
+Using the Python SDK, developers can extend these integrations programmatically to trigger actions based on insights.
+
+---
+
+## 7. Practical Example: Setting Up Google Drive Ingestion via Morphik Python SDK
+
+```python
+from morphik import Morphik
+
+# Initialize Morphik client with authentication URI
+morphik = Morphik("morphik://owner_id:token@api.morphik.ai")
+
+# Assuming you have Google Drive integration set in Morphik console
+# List all connected connectors
+connectors = morphik.list_connectors()
+print("Available connectors:", connectors)
+
+# Start ingestion for Google Drive folder
+morphik.start_connector_sync(connector_name="google_drive", folder_name="ProjectDocs")
+
+# Wait and retrieve ingested documents in ProjectDocs
+documents = morphik.list_documents(filters={"folder_name": "ProjectDocs"})
+for doc in documents:
+    print(f"Document {doc.external_id}: {doc.metadata.get('title')}")
+```
+
+_Note: The above methods like `list_connectors` and `start_connector_sync` are representative; refer to the latest SDK/API docs for exact function names._
+
+---
+
+## 8. Troubleshooting Common Issues
+
+<AccordionGroup title="Common Issues and Solutions">
+<Accordion title="OAuth Authentication Errors">
+- Verify redirect URIs exactly match your Morphik Console URL.
+- Ensure the API credentials have the correct scopes.
+- Renew tokens if expired.
+</Accordion>
+<Accordion title="No Documents Ingested">
+- Check connector sync logs in the Morphik Console.
+- Confirm the connector has access to the intended folders or channels.
+- Review ingestion filters to avoid excluding documents unintentionally.
+</Accordion>
+<Accordion title="Rate Limiting or Ingestion Failures">
+- Reduce ingestion frequency.
+- Limit scope to smaller folders or channels.
+- Retry after a delay; rate limits reset per platform guidelines.
+</Accordion>
+<Accordion title="Document Content Missing Visual Elements">
+- Ensure images and embedded content are accessible.
+- Check that the ingestion process supports multimodal content.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 9. Best Practices and Tips
+
+- Regularly review connector sync status in Morphik Console.
+- Use metadata tags to segment content logically across platforms.
+- Test ingestion of small document sets before scaling.
+- Use Morphik’s knowledge graph capabilities to unify information from multiple sources.
+- Monitor costs and optimize ingestion schedules to balance freshness with resource usage.
+
+---
+
+## 10. Next Steps & Related Documentation
+
+- Explore the [Morphik Console Guide](https://morphik.ai/docs/getting-started/first-steps-and-validation/using-the-morphik-console) to manage integrations visually.
+- Consult the [Python SDK Guide](https://morphik.ai/docs/sdks/core-workflows/search-query) for programmatic control of connectors and ingestion.
+- Learn more about [Knowledge Graph Construction](https://morphik.ai/docs/guides/knowledge-graphs/build-knowledge-graph) and querying across integrated data.
+- Refer to [Integration Landscape](https://morphik.ai/docs/overview/architecture-core-concepts/integration-points) for advanced architecture and supported platforms.
+- For troubleshooting integration issues, review [Getting Community Support](https://morphik.ai/docs/getting-started/troubleshooting-help/getting-community-support).
+
+---
+
+Harness the full power of Morphik by connecting it to your ecosystem, enabling continuous, intelligent access to your organization’s most valuable knowledge wherever it resides.

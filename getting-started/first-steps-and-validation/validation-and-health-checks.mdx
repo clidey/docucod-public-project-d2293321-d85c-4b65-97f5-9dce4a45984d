@@ -1,0 +1,196 @@
+---
+title: "Validating Your Morphik Setup"
+description: "Instructions for verifying your installation or deployment, including connection tests for the server, checking service logs, and using the health check endpoint. Also points to example queries and basic troubleshooting steps."
+---
+
+# Validating Your Morphik Setup
+
+Welcome to Morphik! This guide helps you confirm that your installation or deployment is correct and fully operational. You’ll find clear, actionable steps to verify connectivity, inspect logs, and run basic health checks. By following this guide, you ensure that Morphik is ready to process your data and respond to your queries.
+
+---
+
+## 1. Verify Server Connectivity
+
+To confirm your Morphik server is running and accessible:
+
+### Step 1: Check the Server URL
+
+- If self-hosted, confirm your server is running at `http://localhost:8000` or your configured host and port.
+- If using the hosted Morphik service, use the provided API endpoint.
+
+### Step 2: Ping the Health Endpoint
+
+Run the following curl command to verify the server responds:
+
+```bash
+curl -X GET http://<your-server-host>:<port>/ping
+```
+
+Expected output:
+
+```json
+{
+  "status": "ok",
+  "message": "Server is running"
+}
+```
+
+This confirms the API is reachable and healthy.
+
+### Troubleshooting
+- If you receive connection errors or timeouts, verify that the server is running and network/firewall rules allow traffic to your Morphik host and port.
+
+- Common ports are 8000 (self-hosted default). Use the exact port from your configuration.
+
+
+## 2. Check Service Logs
+
+Inspecting logs is critical for spotting errors, warnings, or startup issues.
+
+### Step 1: Locate Morphik Logs
+
+- **Docker deployments:** Logs appear in the container output. Use:
+
+```bash
+docker logs <morphik-container-name>
+```
+
+- **Self-hosted local:** Check your configured log directory (often `./logs` or `/var/log/morphik/`).
+
+- **Hosted service:** Access logs via your cloud provider dashboard or Morphik support.
+
+### Step 2: Search for Errors or Critical Warnings
+
+Look for lines containing:
+
+- `ERROR`
+- `CRITICAL`
+- Exceptions or stack traces
+
+### Step 3: Verify Key Service Components
+
+The logs should confirm that:
+
+- The database connection is established.
+- Redis (if configured) is reachable.
+- The ingestion worker is running.
+- HTTP server is listening on the right port.
+
+
+## 3. Validate Configuration File
+
+Ensure your `morphik.toml` reflects the intended deployment setup.
+
+### Step 1: Locate Your `morphik.toml`
+
+- This file holds core settings such as server host, port, authentication modes, and model configurations.
+
+### Step 2: Confirm Critical Configuration Parameters
+
+Verify key entries, for example:
+
+- `[api]` host is set correctly (`0.0.0.0` for public, `127.0.0.1` for local).
+- `[auth]` dev_mode is appropriate (`true` for development).
+- `[database]` points to your PostgreSQL instance.
+- `[redis]` connection settings match your Redis server.
+
+### Step 3: Run the Included Sanity Check Script (Optional)
+
+You can run the bundled sanity check script to validate your configuration and code consistency:
+
+```bash
+./scripts/hosted_service_sanity_check.py
+```
+
+The script will verify important files and settings, reporting any issues.
+
+
+## 4. Run a Basic API Request to Confirm Operation
+
+Use a simple query example to test your setup beyond the health check.
+
+### Step 1: Obtain or Generate an Authentication Token
+
+- For hosted Morphik, your API token comes from the console or signup process.
+- For self-hosted development, tokens may be auto-generated with dev_mode enabled.
+
+### Step 2: Run a Simple Query Using `curl`
+
+Replace `<TOKEN>` with your Bearer token and `<SERVER>` with your server URL:
+
+```bash
+curl -X POST https://<SERVER>/query \
+-H "Authorization: Bearer <TOKEN>" \
+-H "Content-Type: application/json" \
+-d '{"query": "What is Morphik?", "k": 3}'
+```
+
+Expected response contains a JSON with a `completion` field summarizing Morphik.
+
+### Troubleshooting
+
+- **401 Unauthorized**: Check your token validity and permissions.
+- **500 Internal Server Error**: Inspect server logs for traceback.
+
+
+## 5. Using the Morphik Console for Validation
+
+If you have access to the Morphik Console (for hosted service or local Web UI):
+
+1. Log in via your web browser.
+2. Navigate to the **Health & Status** or **Diagnostics** page.
+3. Verify service uptime, ingestion status, and query logs.
+4. Run example queries or upload sample documents to confirm pipeline operation.
+
+
+## 6. Common Pitfalls & Tips
+
+- **Network Issues:** Ensure firewalls and Docker network settings permit access to Morphik server and Redis.
+
+- **Token Errors:** Tokens expire or may lack required permissions. Verify with development or hosted workflows.
+
+- **Migrations:** For upgrading existing Morphik installations, confirm migrations ran successfully (see related migration docs).
+
+- **Dependency Services:** PostgreSQL and Redis must be running and accessible for Morphik to function.
+
+- **Development Mode:** In dev_mode (`true`), authentication is simplified but not secure for production.
+
+
+## 7. Next Steps
+
+Upon successfully validating your setup, explore these resources to deepen your expertise:
+
+- [First Query with the SDK](getting-started/first-steps-and-validation/run-first-sdk-query.md): Run your initial document ingestion and query in Python.
+- [Morphik Console Usage](getting-started/first-steps-and-validation/using-the-morphik-console.md): Learn to use the web interface for uploads and queries.
+- [Self-Hosting Guide](getting-started/install-configure-morphik/self-hosting-guide.md): Detailed setup and scaling instructions for local deployments.
+
+
+---
+
+### Troubleshooting Quick Reference
+
+| Issue                         | Solution                                       |
+|-------------------------------|------------------------------------------------|
+| Server unreachable             | Verify server running and network rules        |
+| Health endpoint not responding | Check server logs and process status           |
+| Authentication failure         | Confirm token is valid, permissions are granted|
+| Service logs show errors       | Review logs for specific error messages         |
+| Dependencies not connecting    | Ensure Redis and PostgreSQL are running          |
+
+
+---
+
+For detailed error scenarios and solutions, see our [Troubleshooting Installation Problems](getting-started/troubleshooting-help/common-install-issues.md) and [Getting Help & Support](getting-started/troubleshooting-help/getting-community-support.md) guides.
+
+---
+
+# Summary
+- Perform simple `curl` requests to `/ping` to confirm server health.
+- Review logs to ensure all services (database, Redis, ingestion worker) are operational.
+- Validate your `morphik.toml` configuration with the sanity check script.
+- Test a simple authenticated query to verify full pipeline functionality.
+- Use the Morphik Console for easy access to diagnostics and testing.
+
+Your Morphik setup is now ready to handle your document ingestion and intelligent queries. For advanced workflows, visit the core workflows and knowledge graph guides listed below.
+
+---

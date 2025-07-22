@@ -1,0 +1,249 @@
+---
+title: "Installing Morphik Python SDK"
+description: "Instructions for developers to install the Morphik Python SDK using pip, along with references to verify installation and usage in your Python environment. Ideal for users who want to quickly build programmatic integrations."
+---
+
+# Installing Morphik Python SDK
+
+This guide walks you through installing the Morphik Python SDK using `pip` and verifying that it is ready for use. Whether you are starting development of programmatic integrations or building applications leveraging Morphik’s powerful capabilities, this page provides clear, step-by-step instructions to get your Python environment configured and the SDK operational.
+
+---
+
+## 1. Prerequisites & System Requirements
+
+Before installing the SDK, ensure your environment meets these minimum requirements:
+
+- **Python Version**: 3.8 or later (Python 3.10+ recommended for best compatibility)
+- **Operating System**: Any OS that supports Python 3.8+, including Windows, macOS, and Linux
+- **Network Access**: Ability to reach the Morphik API endpoint you plan to use
+- **Package Manager**: `pip` should be installed and up-to-date
+
+Check your Python version by running:
+
+```bash
+python --version
+```
+
+Upgrade pip to the latest version to avoid installation issues:
+
+```bash
+python -m pip install --upgrade pip
+```
+
+---
+
+## 2. Installation Instructions
+
+### Step 1: Install the Morphik SDK Using pip
+
+The Morphik Python SDK is published on PyPI and can be installed directly:
+
+```bash
+pip install morphik
+```
+
+This command downloads and installs the latest stable version of the Morphik client library and its dependencies.
+
+### Step 2: Verify Installation
+
+After installation, confirm the SDK is installed correctly by checking the installed package:
+
+```bash
+pip show morphik
+```
+
+Expected output will show package name, version, location, and dependencies, confirming a successful install.
+
+Alternatively, test importing the SDK in a Python shell:
+
+```python
+>>> from morphik import Morphik
+>>> print(Morphik.__version__)
+```
+
+This confirms the package is recognized and accessible in your Python environment.
+
+<Check>
+If you encounter errors during installation, ensure your Python and pip versions meet requirements and that you have network connectivity to PyPI.
+</Check>
+
+---
+
+## 3. Basic Usage Verification
+
+To quickly validate your Morphik Python SDK installation and connection, follow this brief example.
+
+### Step 1: Prepare Your Environment
+
+You need to have a valid Morphik URI. If you are onboarding with the hosted service, obtain your Morphik API token as described in the [Signing Up for Morphik](https://morphik.ai/docs/getting-started/install-configure-morphik/cloud-signup) guide.
+
+Set an environment variable `MORPHIK_URI` with your API URI or connection string:
+
+```bash
+export MORPHIK_URI="morphik://owner_id:token@api.morphik.ai"
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:MORPHIK_URI="morphik://owner_id:token@api.morphik.ai"
+```
+
+### Step 2: Run a Minimal Python Script
+
+Create a simple script named `test_morphik_sdk.py`:
+
+```python
+import os
+from morphik import Morphik
+
+# Initialize Morphik client using environment variable
+morphik_uri = os.getenv("MORPHIK_URI")
+db = Morphik(morphik_uri)
+
+# Ingest a sample text document
+text_doc = db.ingest_text(
+    content="Morphik Python SDK installation verification.",
+    metadata={"category": "test", "source": "installation"}
+)
+print(f"Successfully ingested document with ID: {text_doc.external_id}")
+
+# Perform a simple query
+response = db.query("What is Morphik?", k=1)
+print("Query response:", response.completion)
+```
+
+Run this script:
+
+```bash
+python test_morphik_sdk.py
+```
+
+#### Expected Outcome:
+- Document ingestion will confirm by printing the document ID.
+- The query will return a concise completion related to Morphik.
+
+This simple script validates both ingestion and querying capabilities via the SDK, confirming that your installation and configuration are functional.
+
+<Note>
+Replace `MORPHIK_URI` with your actual Morphik URI/token before running the script.
+</Note>
+
+---
+
+## 4. Additional Installation Tips & Best Practices
+
+- Use a Python virtual environment to isolate Morphik SDK dependencies:
+
+```bash
+python -m venv morphik-env
+source morphik-env/bin/activate  # Linux/macOS
+morphik-env\Scripts\activate   # Windows
+```
+
+- Regularly check for SDK updates:
+
+```bash
+pip install --upgrade morphik
+```
+
+- If using in production, pin your SDK version in your `requirements.txt` or `pyproject.toml` to ensure stable builds.
+
+- For asynchronous applications, install the SDK and use `AsyncMorphik` client as described in the [Morphik Python SDK README](https://morphik.ai/docs/sdks/python/README.md).
+
+---
+
+## 5. Troubleshooting Common Installation Issues
+
+<AccordionGroup title="Common Installation Issues and Solutions">
+<Accordion title="Issue: pip command not found">
+You may not have `pip` installed or it's not in your system PATH.
+
+**Solution:**
+- Install pip by downloading [get-pip.py](https://bootstrap.pypa.io/get-pip.py) and running:
+
+  ```bash
+  python get-pip.py
+  ```
+- Ensure Python and pip are properly added to your PATH environment variable.
+</Accordion>
+
+<Accordion title="Issue: Permission denied or access errors during install">
+**Solution:**
+- Use a virtual environment to avoid permission issues.
+- Or run pip with elevated privileges:
+
+  ```bash
+  sudo pip install morphik  # Linux/macOS
+  ```
+- Avoid using `sudo` when possible and prefer virtual environments.
+</Accordion>
+
+<Accordion title="Issue: Network connectivity or timeout errors">
+**Solution:**
+- Check your internet connection and firewall rules.
+- Ensure your environment allows HTTPS traffic to PyPI.
+- Retry installation after confirming connectivity.
+</Accordion>
+
+<Accordion title="Issue: ImportError or module not found after install">
+**Solution:**
+- Verify you are running Python in the same environment where Morphik was installed.
+- Check Python path and environment variables.
+- Try reinstalling Morphik within your current environment.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 6. Next Steps & Resources
+
+- Explore the [Morphik Python SDK README](https://morphik.ai/docs/sdks/python/README.md) for detailed usage examples, synchronous and asynchronous code snippets, and feature descriptions.
+- Follow the [Quick Start guide](https://morphik.ai/docs/overview/feature-overview/quickstart) to perform your first full ingestion and query flow.
+- Visit [Signing Up for Morphik](https://morphik.ai/docs/getting-started/install-configure-morphik/cloud-signup) if you need to create an account and obtain your Morphik URI.
+- For detailed troubleshooting, see [Common Installation Issues](https://morphik.ai/docs/getting-started/troubleshooting-help/common-install-issues).
+- Join the community on Discord for live assistance and support.
+
+---
+
+## 7. Summary
+
+Installing the Morphik Python SDK is straightforward using `pip` and requires only Python 3.8+, network connectivity, and a Morphik API URI to connect. Verification is quick by running a simple ingestion and query example. Using virtual environments and keeping the SDK up to date will ensure smooth development.
+
+Harness the full power of Morphik's multimodal ingestion and knowledge graph features by building upon this solid SDK foundation.
+
+
+---
+
+## Example Code Snippet
+
+```python
+import os
+from morphik import Morphik
+
+# Initialize Morphik client
+morphik_uri = os.getenv("MORPHIK_URI")
+db = Morphik(morphik_uri)
+
+# Ingest a text document
+text_doc = db.ingest_text(
+    content="Verifying Morphik SDK installation",
+    metadata={"test": "installation"}
+)
+print(f"Ingested document ID: {text_doc.external_id}")
+
+# Perform a query
+response = db.query("What is Morphik?", k=1)
+print("Query response:", response.completion)
+```
+
+---
+
+## References
+
+- [Morphik Python SDK README](https://morphik.ai/docs/sdks/python/README.md)
+- [Signing Up for Morphik (Hosted Service)](https://morphik.ai/docs/getting-started/install-configure-morphik/cloud-signup)
+- [Quick Start: Using Morphik](https://morphik.ai/docs/overview/feature-overview/quickstart)
+- [Troubleshooting Installation Problems](https://morphik.ai/docs/getting-started/troubleshooting-help/common-install-issues)
+
+---

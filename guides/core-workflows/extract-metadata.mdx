@@ -1,0 +1,261 @@
+---
+title: "Metadata Extraction with Rules Engine"
+description: "Automate extraction of structured information from documents—including entities, bounding boxes, and labels—using Morphik’s fast, extensible rules engine. Follow practical examples for crafting and applying rules to common document types."
+---
+
+# Metadata Extraction with Rules Engine
+
+Automate the extraction of structured information from your documents by leveraging Morphik’s fast and extensible rules engine. This powerful feature enables you to define *what* metadata to extract—including entities, bounding boxes, labels, and classifications—and *how* to extract it, through intuitive rules applied at ingestion time.
+
+This guide walks you through crafting rules, applying them during ingestion, and practical examples for common document types.
+
+---
+
+## 1. Overview
+
+### What This Guide Covers
+
+This page focuses exclusively on the **Metadata Extraction with Rules Engine** feature. You will learn how to:
+
+- Define extraction schemas and custom rules
+- Apply these rules during document ingestion
+- Use built-in natural language prompts and schema-based extraction
+- Validate and retrieve enhanced metadata
+
+### Prerequisites
+
+- Access to Morphik workspace with ingestion privileges
+- Morphik Python SDK or Morphik Console access
+- Basic familiarity with document ingestion and metadata concepts
+- (Optional) Exposure to Pydantic schemas or JSON schema basics
+
+### Expected Outcome
+
+By following this guide, you will be able to ingest documents (text or files) with custom metadata extraction rules applied automatically. Your documents will include rich, structured metadata extracted in a form tailored to your domain.
+
+### Estimated Time
+
+- Reading and understanding examples: 10-15 minutes
+- Setting up simple extraction rules: 5-10 minutes
+- Testing extraction workflows: 15-30 minutes
+
+### Difficulty
+
+Intermediate — familiarity with document ingestion workflows and simple Python scripting will help.
+
+---
+
+## 2. How Metadata Extraction with Rules Engine Works
+
+Morphik leverages a **rules engine** that processes documents during ingestion to extract structured metadata fields and perform natural language transformations. The primary capabilities include:
+
+- **Schema-driven extraction**: Define a structured schema using Pydantic or JSON schema to specify exactly which fields to extract from the document text.
+- **Natural language rules**: Use custom LLM-powered prompts to transform, summarize, or classify parts of the document.
+- **Combination of rules**: Multiple rules can be combined and applied sequentially for detailed processing.
+
+### Why Use Rules Engine?
+
+- Automate manual metadata tagging
+- Extract domain-specific entities and properties
+- Clean PII or sensitive information
+- Generate summaries or classifications
+- Improve search relevance and knowledge graph accuracy
+
+---
+
+## 3. Writing and Applying Metadata Extraction Rules
+
+### Step 1: Define Your Metadata Schema
+
+Use Pydantic models or a JSON schema dictionary to define the metadata fields you want to extract. For example, for a financial report document:
+
+```python
+from pydantic import BaseModel
+
+class DocumentInfo(BaseModel):
+    title: str
+    date: str
+    author: str
+    department: str
+```
+
+### Step 2: Create Metadata Extraction Rules
+
+Use the Morphik Python SDK `MetadataExtractionRule` to bind the extraction process to your schema:
+
+```python
+from morphik.rules import MetadataExtractionRule
+
+metadata_rule = MetadataExtractionRule(schema=DocumentInfo)
+```
+
+### Step 3: Add Natural Language Rules (Optional)
+
+You can add additional NLP-based rules such as PII removal or document summarization.
+
+```python
+from morphik.rules import NaturalLanguageRule
+
+pii_removal_rule = NaturalLanguageRule(
+    prompt="Remove all personally identifiable information including names, email addresses, and phone numbers."
+)
+
+summary_rule = NaturalLanguageRule(
+    prompt="Summarize this document in one paragraph focusing on the financial results."
+)
+```
+
+### Step 4: Combine Rules
+
+Group multiple rules into a list to be applied in sequence during ingestion:
+
+```python
+rules = [metadata_rule, pii_removal_rule, summary_rule]
+```
+
+### Step 5: Ingest Document with Rules
+
+Using the Morphik SDK, pass your rules during ingestion:
+
+```python
+# For text ingestion
+
+text_content = "...your document text..."
+doc = db.ingest_text(text_content, rules=rules, metadata={"category": "financial"})
+
+# For file ingestion
+
+file_doc = db.ingest_file("path/to/file.pdf", rules=rules, metadata={"category": "financial"})
+```
+
+### Step 6: Verify Extracted Metadata
+
+After ingestion completes, check the metadata extracted:
+
+```python
+print(doc.metadata)
+# Expected output:
+# {'title': 'Q2 Financial Analysis', 'date': 'June 30, 2023', 'author': 'John Smith', 'department': 'Finance', 'summary': '...', 'pii_removed': True}
+```
+
+---
+
+## 4. Practical Example — Ingesting and Extracting Metadata
+
+Here is a full, simple example using the Python SDK:
+
+```python
+import os
+from morphik import Morphik
+from morphik.rules import MetadataExtractionRule, NaturalLanguageRule
+from pydantic import BaseModel
+
+# Define schema
+class DocumentInfo(BaseModel):
+    title: str
+    date: str
+    author: str
+    department: str
+
+# Initialize client
+# Make sure MORPHIK_URI is set in your environment
+
+db = Morphik(os.getenv("MORPHIK_URI"), timeout=10000, is_local=True)
+
+# Sample document text
+sample_text = """
+Report: Q2 Financial Analysis
+Date: June 30, 2023
+Author: John Smith, Chief Financial Analyst
+Department: Finance
+
+Here are the key financial highlights...
+"""
+
+# Define rules
+metadata_rule = MetadataExtractionRule(schema=DocumentInfo)
+pii_removal_rule = NaturalLanguageRule(
+    prompt="Remove all personally identifiable information including names, email addresses, and phone numbers."
+)
+summary_rule = NaturalLanguageRule(
+    prompt="Summarize this document in one paragraph focusing on the financial results."
+)
+
+rules = [metadata_rule, pii_removal_rule, summary_rule]
+
+# Ingest with rules
+print("Ingesting document with rules...")
+doc = db.ingest_text(sample_text, rules=rules, metadata={"category": "financial"})
+print(f"Ingested document with ID: {doc.external_id}")
+
+# Output extracted metadata
+print("\nExtracted metadata:")
+for key, value in doc.metadata.items():
+    print(f"  {key}: {value}")
+```
+
+
+---
+
+## 5. Best Practices & Tips
+
+- **Define clear schemas**: Be explicit in the metadata schema about required fields and data types to improve extraction accuracy.
+- **Combine rules thoughtfully**: Use natural language rules to complement schema extraction (e.g., for sensitive data removal or summarization).
+- **Test incrementally**: Start with schema-only rules, then add NLP-based rules as needed.
+- **Use meaningful metadata**: Apply categories and tags in the `metadata` parameter during ingestion to facilitate filtering and retrieval.
+- **Keep rules small and focused**: Complex sets of rules may increase processing time.
+- **Monitor extraction status**: Use the document’s `is_processing`, `is_failed`, and `error` properties to handle failures gracefully.
+
+---
+
+## 6. Common Pitfalls & Troubleshooting
+
+<AccordionGroup title="Common Issues and Solutions">
+<Accordion title="Extraction yields empty or partial metadata">
+- Verify your schema matches the expected document content structure.
+- Add example documents similar to target inputs to improve LLM extraction.
+- Test ingestion with only the MetadataExtractionRule to isolate issues.
+- Ensure rules are passed correctly as a list during ingestion.
+</Accordion>
+<Accordion title="PII removal incomplete or missing">
+- Check that your natural language prompt covers all PII types you want to remove.
+- Run ingestion separately with only the PII removal rule to test effectiveness.
+- Consider tuning prompt clarity or adding domain-specific terms.
+</Accordion>
+<Accordion title="Ingestion errors or timeouts">
+- Confirm your API URI and authentication tokens are correct.
+- Check server logs and health checks as per the [Installation Troubleshooting Guide](/getting-started/troubleshooting-help/common-install-issues).
+- Increase client timeout values if ingestion is slow.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## 7. Advanced Usage & Customization
+
+- **Custom prompt templates**: Override default extraction prompts with your domain-specific templates to improve entity recognition.
+- **Entity extraction and resolution**: Use `EntityExtractionExample` and `EntityResolutionExample` to teach the engine about domain-specific entities and variant forms.
+- **Rules composition**: Create complex workflows that chain multiple rule-based transformations.
+- **Folder-scoped rules**: Associate rules with folders to apply different extraction logic based on document grouping.
+
+---
+
+## 8. Related Documentation
+
+- [Ingesting Documents of All Types](/guides/core-workflows/ingest-documents) — Comprehensive guide on document ingestion.
+- [Multimodal Search & Retrieval](/guides/core-workflows/multimodal-search) — Searching indexed data with rules-enhanced metadata.
+- [Python SDK Usage & Examples](/sdks/python/README.md) — Install and basic usage of the Morphik Python SDK.
+- [Troubleshooting Installation Problems](/getting-started/troubleshooting-help/common-install-issues) — Diagnostic help for ingestion or service errors.
+- [Knowledge Graphs and Metadata](/guides/knowledge-graphs/build-knowledge-graph) — Using extracted metadata to build rich graphs.
+
+---
+
+## 9. Summary
+
+Morphik’s Rules Engine empowers you to extract precise, structured metadata automatically during document ingestion. By combining schema-driven extraction with natural language rules, you can rapidly onboard various document types and improve knowledge discovery and compliance.
+
+Use the Python SDK examples to get started quickly, and explore advanced prompt overrides to tailor extraction for your unique needs.
+
+<Check>
+Metadata extraction with rules is a cornerstone for unlocking your documents’ value — start crafting your extraction rules today!
+</Check>
