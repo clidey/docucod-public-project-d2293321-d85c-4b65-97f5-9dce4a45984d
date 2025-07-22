@@ -3,4 +3,191 @@ title: "First Query with the SDK"
 description: "Show how to quickly validate your Morphik installation or cloud credentials by running your first ingestion and query using the Python SDK. Sample code for file ingestion and natural language querying included."
 ---
 
-*This page will automatically be generated from the codebase*
+# First Query with the SDK
+
+Quickly validate your Morphik installation or cloud credentials by running your first document ingestion and query using the Morphik Python SDK. This guide walks you through a practical example including file ingestion and a natural language query using the synchronous client. An asynchronous example is also referenced for advanced users.
+
+---
+
+## Prerequisites
+
+- **Morphik SDK Installed:** Ensure you have installed the Morphik Python SDK. If not, see [Installing Morphik Python SDK](https://morphik.ai/docs/getting-started/install-configure-morphik/install-python-sdk).
+- **Morphik Service Access:** You need access to a Morphik instance, either by:
+  - Signing up for the hosted Morphik service to get your `MORPHIK_URI`.
+  - Running a local or self-hosted Morphik server.
+- **Python 3.8+** installed
+- **Connectivity:** Network access to your Morphik service endpoint.
+- **Sample Files:** A test file such as `sample1.txt` available locally for ingestion. Sample test files can be found in the [Morphik SDK test directory](https://github.com/morphik-org/morphik-core/blob/main/morphik/tests/test_docs/sample1.txt).
+
+---
+
+## Quick Start: Run Your First Query
+
+Follow these steps to verify your Morphik setup by ingesting a file and running a natural language query.
+
+<Steps>
+<Step title="1. Initialize the Morphik Client">
+Import and create an instance of the Morphik synchronous client. Replace `<your-morphik-uri>` with your Morphik API URI or use the default localhost if self-hosting.
+
+```python
+from morphik import Morphik
+
+# Initialize client (default localhost:8000 if no URI provided)
+db = Morphik("<your-morphik-uri>")
+print(f"Connected to Morphik endpoint: {db._logic._base_url}")
+```
+</Step>
+<Step title="2. Ingest a File">
+Upload a document file to Morphik for semantic processing and indexing. Replace `path/to/sample1.txt` with the path to your local file.
+
+```python
+file_path = "path/to/sample1.txt"
+doc = db.ingest_file(file=file_path, metadata={"source": "first_query_sdk", "type": "test"})
+print(f"Document ingested with ID: {doc.external_id}")
+```
+
+This stores the document and prepares it for search and querying.
+</Step>
+<Step title="3. Wait for Document Processing Completion">
+Morphik processes ingested documents asynchronously. Wait and check until the ingestion completes before querying.
+
+```python
+import time
+
+for attempt in range(10):
+    status = db.get_document_status(doc.external_id)
+    if status.get("status") == "completed":
+        print(f"Document {doc.external_id} processing completed.")
+        break
+    print(f"Waiting for document processing (current status: {status.get('status')})...")
+    time.sleep(3)
+else:
+    raise TimeoutError("Document processing not completed in time.")
+```
+
+If the document is not processed after 30 seconds, verify your Morphik service availability and logs.
+</Step>
+<Step title="4. Run a Natural Language Query">
+Use Morphik’s retrieval-augmented generation capabilities to query your documents.
+
+```python
+query_text = "What is this document about?"
+response = db.query(query=query_text, filters={"source": "first_query_sdk"}, k=3)
+
+print("Query Response:")
+print(response.completion)
+```
+
+This queries the indexed content and returns an AI-generated answer based on your ingested documents.
+</Step>
+<Step title="5. Clean Up">
+Remove test documents to keep your workspace clean.
+
+```python
+delete_result = db.delete_document(doc.external_id)
+print(f"Deleted document: {delete_result.get('message', 'Success')}")
+
+# Close the client connection if done
+db.close()
+```
+</Step>
+</Steps>
+
+---
+
+## Sample Complete Script
+
+```python
+from morphik import Morphik
+import time
+
+# 1. Initialize Morphik client
+morphik = Morphik("<your-morphik-uri>")
+
+# 2. Ingest a file
+file_path = "path/to/sample1.txt"
+doc = morphik.ingest_file(file=file_path, metadata={"source": "first_query_sdk"})
+print(f"Document ingested with ID: {doc.external_id}")
+
+# 3. Wait for ingestion to finish
+for _ in range(10):
+    status = morphik.get_document_status(doc.external_id)
+    if status.get("status") == "completed":
+        print(f"Document processed successfully.")
+        break
+    print(f"Waiting for processing: {status.get('status')}")
+    time.sleep(3)
+else:
+    raise Exception("Document processing timed out.")
+
+# 4. Query the content
+response = morphik.query(query="Summarize this document.", filters={"source": "first_query_sdk"})
+print("Query completion:")
+print(response.completion)
+
+# 5. Cleanup
+result = morphik.delete_document(doc.external_id)
+print(f"Deleted document: {result.get('message', 'Success')}")
+
+morphik.close()
+```
+
+---
+
+## Additional Tips & Best Practices
+
+- **Use Filters Carefully:** When running queries, apply metadata filters like `source` or `type` to narrow down results and improve performance.
+- **Handle Timeouts:** Document processing can take several seconds depending on size and server load; implement retry logic with timeouts.
+- **Local vs Cloud:** If self-hosting, verify your local server is running and accessible before running SDK commands.
+- **Asynchronous SDK:** For applications with concurrency, consider using the async Morphik client (`AsyncMorphik`) for improved scalability.
+
+---
+
+## Troubleshooting Common Issues
+
+<AccordionGroup title="Common Issues When Running Your First Query">
+<Accordion title="Connection Errors">
+- Verify your Morphik URI is correct.
+- If connecting to localhost, ensure the Morphik server is running at port 8000.
+- Check network firewalls or proxies that may block connections.
+</Accordion>
+<Accordion title="Document Not Processing">
+- Ensure your Morphik service has access to required resources.
+- Check the server logs for ingestion errors.
+- Wait sufficient time for larger documents.
+</Accordion>
+<Accordion title="Empty Query Results">
+- Confirm the document was ingested and processed.
+- Use metadata filters matching your documents.
+- Try simpler queries or increase `k` (number of chunks retrieved).
+</Accordion>
+<Accordion title="Authentication Failures">
+- For cloud usage, ensure your API token is valid and has permissions.
+- Run any required migrations if upgrading older Morphik versions.
+</Accordion>
+</AccordionGroup>
+
+<Note>
+If you encounter persistent issues, consult the [Troubleshooting Installation Problems](https://morphik.ai/docs/getting-started/troubleshooting-help/common-install-issues) and [Getting Community Support](https://morphik.ai/docs/getting-started/troubleshooting-help/getting-community-support) guides.
+</Note>
+
+---
+
+## Next Steps
+
+- Explore [Using the Morphik Console](https://morphik.ai/docs/getting-started/first-steps-and-validation/using-the-morphik-console) for a graphical experience.
+- Learn advanced query patterns and metadata extraction in the [Core Workflows Guides](https://morphik.ai/docs/guides/core-workflows/ingest-documents).
+- Check out the [Knowledge Graphs Guide](https://morphik.ai/docs/guides/knowledge-graphs/build-knowledge-graph) to harness deeper semantic connections.
+- Try the asynchronous SDK for concurrent operations (see the SDK README and examples).
+
+---
+
+## References
+
+- Morphik Python SDK GitHub: [https://github.com/morphik-org/morphik-core](https://github.com/morphik-org/morphik-core)
+- Morphik SDK README: [https://morphik.ai/docs/sdks/python-sdk](https://morphik.ai/docs/sdks/python-sdk)
+- Hosted Morphik Signup: [https://www.morphik.ai/signup](https://www.morphik.ai/signup)
+
+---
+
+Your first ingestion and query validate that your Morphik setup is ready. From here, you can begin integrating Morphik’s powerful multimodal search and knowledge graph features into your AI applications with confidence.
