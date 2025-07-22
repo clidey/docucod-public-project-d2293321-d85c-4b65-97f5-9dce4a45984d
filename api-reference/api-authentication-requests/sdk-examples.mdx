@@ -3,4 +3,355 @@ title: "SDK Usage & Code Examples"
 description: "How to perform common API operations using the Morphik Python SDK. Provides code snippets for authentication, file ingestion, querying, and workflow invocation, with links to core SDK classes and example files."
 ---
 
-*This page will automatically be generated from the codebase*
+# SDK Usage & Code Examples
+
+Explore practical ways to utilize the Morphik Python SDK for common API operations such as authentication, document ingestion, querying, and workflow invocation. This page provides detailed, real-world code snippets and workflows to help you integrate Morphik’s powerful capabilities seamlessly into your applications.
+
+---
+
+## Getting Started with the Morphik Python SDK
+
+The Morphik Python SDK offers both synchronous and asynchronous clients, enabling flexibility depending on your application's needs and environment.
+
+### Installation
+
+Install the SDK easily with pip:
+
+```bash
+pip install morphik
+```
+
+### Basic Initialization
+
+```python
+from morphik import Morphik
+
+# Connect to Morphik server (default localhost:8000 for local)
+db = Morphik("morphik://owner_id:token@api.morphik.ai")  # For production use
+
+# For local development or testing
+db = Morphik()  # Defaults to localhost:8000
+```
+
+<Tip>
+Always securely manage your connection URI containing owner ID and token credentials, especially in production environments.
+</Tip>
+
+---
+
+## Authentication & User Scoping
+
+Morphik supports scoping your API operations by end user or folder for multi-tenant or application-specific isolation.
+
+### Creating User Scopes
+
+```python
+# Create user context to scope operations to a specific end user
+user_scope = db.signin("user@example.com")
+
+# Use user_scope just like db for ingestion and queries
+user_doc = user_scope.ingest_text(
+    content="User-specific document content.",
+    filename="user_doc.txt"
+)
+```
+
+### Working Within Folders
+
+```python
+# Create or access a folder to organize documents
+folder = db.create_folder(name="project_documents")
+
+# Ingest directly into the folder
+folder_doc = folder.ingest_text("Folder scoped content.", filename="folder_doc.txt")
+
+# Create a user scoped to a folder
+folder_user = folder.signin("user@example.com")
+folder_user_doc = folder_user.ingest_text("Content from specific user in folder.")
+```
+
+---
+
+## Document Ingestion
+
+Morphik allows ingesting both plain text and files from disk, with metadata and optional advanced processing rules.
+
+### Ingest Text Document
+
+```python
+text_doc = db.ingest_text(
+    content="This is a sample text document.",
+    filename="sample.txt",
+    metadata={"category": "example", "author": "Morphik SDK"}
+)
+print(f"Ingested text document ID: {text_doc.external_id}")
+```
+
+### Ingest File from Disk
+
+```python
+file_doc = db.ingest_file(
+    file="path/to/document.pdf",
+    metadata={"category": "reports", "confidential": False}
+)
+print(f"Ingested file document ID: {file_doc.external_id}")
+```
+
+### Batch File Ingestion
+
+You can ingest multiple files in parallel for efficiency:
+
+```python
+files = ["doc1.pdf", "doc2.pdf", "doc3.pdf"]
+docs = db.ingest_files(files=files, metadata={"batch": "exp1"}, parallel=True)
+print(f"Ingested {len(docs)} documents in batch.")
+```
+
+### Ingesting with Rules
+
+Apply rules during ingestion to extract metadata or transform documents:
+
+```python
+from morphik.rules import MetadataExtractionRule, NaturalLanguageRule
+
+rules = [
+    MetadataExtractionRule(schema={"title": "string", "date": "string"}),
+    NaturalLanguageRule(prompt="Summarize this document in one paragraph.")
+]
+
+doc = db.ingest_text("Document content to process.", rules=rules, metadata={"category": "rules"})
+print(f"Document with processed metadata ID: {doc.external_id}")
+```
+
+---
+
+## Document Queries
+
+Retrieve and generate insights from your ingested documents using search and RAG (Retrieval-Augmented Generation).
+
+### Retrieving Chunks
+
+```python
+chunks = db.retrieve_chunks(query="Explain Morphik's purpose", filters={"category": "example"}, k=3)
+for chunk in chunks:
+    print(f"Score: {chunk.score}\nContent snippet: {chunk.content[:100]}...\n")
+```
+
+### Running Natural Language Queries with RAG
+
+```python
+response = db.query(
+    query="Summarize the main points of these documents.",
+    filters={"category": "example"},
+    k=3,
+    temperature=0.7
+)
+print("Completion:\n", response.completion)
+print(f"Number of sources: {len(response.sources)}")
+```
+
+### Querying with Structured Output Schemas
+
+Support structured output using Pydantic models or dictionary schemas.
+
+**Using Pydantic schema:**
+
+```python
+from pydantic import BaseModel, Field
+
+class SummarySchema(BaseModel):
+    summary: str = Field(..., description="Summary of the text")
+    key_points: list[str] = Field(..., description="List of key points")
+
+response = db.query(
+    query="Summarize this document and list key points.",
+    schema=SummarySchema,
+    filters={"category": "example"},
+    k=1
+)
+
+print(response.completion['summary'])
+print(response.completion['key_points'])
+```
+
+**Using dictionary JSON schema:**
+
+```python
+dict_schema = {
+    "type": "object",
+    "properties": {
+        "capital": {"type": "string"},
+        "country": {"type": "string"}
+    },
+    "required": ["capital", "country"]
+}
+
+response = db.query(
+    query="Extract capital and country.",
+    schema=dict_schema,
+    filters={"category": "example"},
+    k=1
+)
+print(response.completion)
+```
+
+---
+
+## Folder and User Scope Operations
+
+Organize your documents and operations via folders and user-level scoping for isolated data contexts and access control.
+
+### Folder Operations
+
+```python
+folder = db.create_folder(name="project_x", description="Documents related to Project X")
+print(f"Created folder: {folder.name}")
+
+folder_doc = folder.ingest_text("Document for the project.", filename="proj_doc.txt")
+print(f"Ingested to folder: {folder_doc.external_id}")
+
+docs_in_folder = folder.list_documents()
+print(f"Documents in folder {folder.name}: {len(docs_in_folder)}")
+```
+
+### User Scope Within Folder
+
+```python
+folder_user = folder.signin("user@example.com")
+user_doc = folder_user.ingest_text("User scoped document in folder.")
+print(f"User scoped doc ID: {user_doc.external_id}")
+
+folder_user_docs = folder_user.list_documents()
+print(f"User documents in folder: {len(folder_user_docs)}")
+```
+
+---
+
+## Async Client Usage
+
+For asynchronous environments, Morphik provides `AsyncMorphik`.
+
+```python
+import asyncio
+from morphik.async_ import AsyncMorphik
+
+async def run():
+    async with AsyncMorphik() as db:
+        doc = await db.ingest_text(
+            content="Async document content.",
+            filename="async_doc.txt"
+        )
+        print(f"Async ingested doc ID: {doc.external_id}")
+
+        response = await db.query("Summarize async docs.")
+        print(f"Async query completion: {response.completion}")
+
+asyncio.run(run())
+```
+
+---
+
+## Practical Workflow Summary
+
+1. **Initialize client** with proper Morphik URI or localhost for local.
+2. **Ingest documents** via `ingest_text` or `ingest_file`, optionally with metadata and rules.
+3. **Create folder or user scopes** to organize and isolate data.
+4. **Query documents** by text or natural language with filters.
+5. **Retrieve document chunks** to get relevant content fragments.
+6. **Use structured output schemas** to extract structured insights.
+7. **Clean up** by deleting test or temporary documents.
+
+---
+
+## Example: Synchronous Full Workflow
+
+```python
+from morphik import Morphik
+
+# Initialize client
+client = Morphik()
+
+# Ingest a text document
+text_doc = client.ingest_text(
+    "This is an example document for Morphik SDK.",
+    filename="example.txt",
+    metadata={"source": "sdk_demo"}
+)
+print(f"Document ID: {text_doc.external_id}")
+
+# Create a folder and ingest a document within it
+folder = client.create_folder("sdk_demo_folder")
+folder_doc = folder.ingest_text("Folder doc content", filename="folder_doc.txt")
+
+# Create a user scope
+user = client.signin("user@example.com")
+user_doc = user.ingest_text("User scoped content.", filename="user_doc.txt")
+
+# Retrieve chunks matching a query
+chunks = client.retrieve_chunks("Morphik", filters={"source": "sdk_demo"}, k=2)
+
+# Query using retrieval augmented generation
+response = client.query(query="Summarize Morphik capabilities", filters={"source": "sdk_demo"}, k=2)
+print(response.completion)
+
+# Cleanup
+client.delete_document(text_doc.external_id)
+client.delete_document(folder_doc.external_id)
+client.delete_document(user_doc.external_id)
+client.close()
+```
+
+---
+
+## Code Examples & Testing
+
+The SDK repository includes example scripts and tests demonstrating both synchronous and asynchronous use cases with realistic data.
+
+- **Example script:** `morphik/tests/example_usage.py` demonstrates a full synchronous and async lifecycle from ingestion to queries.
+- **Test files:** Located under `morphik/tests/test_docs/` for ingestion validation.
+- **Running tests:**
+
+```bash
+pytest morphik/tests/ -v
+```
+
+You can also run the example script standalone:
+
+```bash
+python morphik/tests/example_usage.py        # synchronous
+python morphik/tests/example_usage.py --run-async # asynchronous
+```
+
+---
+
+## Best Practices & Tips
+
+- **Wait for documents to be processed** before querying results by polling `get_document_status` or implementing retries.
+- **Use metadata filters** to target queries and retrievals accurately.
+- **Organize data** using folders and users to isolate contexts and simplify operations.
+- **Leverage rules** during ingestion to automate metadata extraction and document transformation.
+- **Use structured schemas** with queries to get typed, validated output useful in downstream processing.
+- **Clean up test or temporary documents** after your workflows to keep your Morphik instance tidy.
+
+---
+
+## Troubleshooting
+
+- Ensure the Morphik server is running and accessible via the provided URI.
+- Validate authentication tokens and their scopes, especially for production endpoints.
+- Check document processing status and allow enough time before querying.
+- For asynchronous usage, confirm proper event loop management.
+- If encountering errors, review examples in the SDK repository and confirm your client version aligns with the server.
+
+---
+
+## Additional Resources
+
+- [Morphik Python SDK README](https://morphik.ai/docs/sdks/python/README.md) – Installation and broader SDK usage
+- [Morphik Console Guide](https://morphik.ai/docs/getting-started/first-steps-and-validation/using-the-morphik-console) – Web interface for ingestion and querying
+- [Documents API Reference](https://morphik.ai/docs/api-reference/api-endpoints/documents-api) – Detailed API endpoint information
+- [Workflow and Rules API](https://morphik.ai/docs/api-reference/api-endpoints/workflows-api) – For advanced processing automation
+- [Cache Augmentation Guide](https://morphik.ai/docs/guides/integrations-and-caching/cache-augmentation) – Speed up generation with persistent caches
+- [Example scripts in GitHub](https://github.com/morphik-org/morphik-core/tree/main/sdks/python/morphik/tests) – Ready to run code
+
+---
