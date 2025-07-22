@@ -3,4 +3,323 @@ title: "Request & Response Patterns"
 description: "Describes the HTTP request formats, required and optional parameters, content types, and structures of response payloads. Includes guidance on best practices for error handling, request debugging, and understanding success/failure codes."
 ---
 
-*This page will automatically be generated from the codebase*
+# Request & Response Patterns
+
+Understanding how to communicate effectively with Morphik's API is essential to successfully leveraging its powerful document and knowledge graph capabilities. This guide dives into the structure and conventions of the HTTP request and response formats, detailing required and optional parameters, content types, and strategies for error handling and debugging.
+
+---
+
+## 1. Overview of Request Format
+
+Morphik's REST API endpoints adopt a consistent request format for JSON payloads and multipart form data where applicable. This consistency simplifies client development and ensures smooth integration.
+
+### Content Types
+
+- **JSON Requests:** Most endpoints accept and return data in application/json format.
+- **Multipart Form Data:** Endpoints handling file uploads accept `multipart/form-data` containing files and JSON-encoded metadata/rules.
+
+### Common Patterns
+
+- **Request Bodies:** Sent as JSON objects with clearly defined fields.
+- **Path Parameters:** Used for identifying resources (e.g., document IDs).
+- **Query Parameters:** Used for filtering, pagination, and optional settings.
+
+### Scoping Parameters
+
+Many endpoints include optional parameters to scope operations by user or folder:
+- `folder_name`: Single string or list of folder names to restrict the context.
+- `end_user_id`: A string identifying the end-user context for multi-tenant isolation.
+
+These parameters enable segmentation of data and queries according to organizational or user structures.
+
+---
+
+## 2. Request Parameters
+
+Understanding request parameters is key to crafting precise API calls. Below are fields commonly found in Morphik API requests.
+
+### Text Ingestion (`ingest_text`)
+| Parameter    | Type                  | Required | Description                                                     |
+|--------------|-----------------------|----------|-----------------------------------------------------------------|
+| `content`    | string                | Yes      | Text content to ingest                                           |
+| `filename`   | string                | No       | Optional file name for the content                              |
+| `metadata`   | object (key-value)     | No       | Custom metadata attached to the document                        |
+| `rules`      | array of rule objects  | No       | Rules for enhancement or metadata extraction                    |
+| `use_colpali`| boolean               | No       | Use ColPali multimodal embeddings if set                      |
+| `folder_name`| string or list<string>| No       | Folder scope for storing the document                           |
+| `end_user_id`| string                | No       | User scope for multi-tenant isolation                           |
+
+### File Ingestion (`ingest_file`)
+- Accepts multipart form data with:
+   - Files: One or more files
+   - Metadata, rules, scope parameters as JSON strings in fields
+- `use_colpali` flag optionally included in form data for multimodal parsing
+
+### Retrieval (`retrieve_chunks`, `retrieve_docs`)
+| Parameter       | Type                  | Required | Description                                                    |
+|-----------------|-----------------------|----------|----------------------------------------------------------------|
+| `query`         | string                | Yes      | Natural language search query                                  |
+| `filters`       | object (key-value)     | No       | Metadata filters to narrow results                            |
+| `k`             | integer               | No       | Number of results to retrieve (default 4)                    |
+| `min_score`     | float                 | No       | Minimum similarity score (default 0.0)                       |
+| `use_reranking` | boolean               | No       | Whether to rerank results                                     |
+| `use_colpali`   | boolean               | No       | Use ColPali embeddings                                        |
+| `padding`       | integer               | No       | Number of adjacent chunks to include around matches (ColPali) |
+| `graph_name`    | string                | No       | Knowledge graph name for graph-augmented retrieval           |
+| `hop_depth`     | integer (1-3)         | No       | Number of graph hops to traverse                              |
+| `include_paths` | boolean               | No       | Include relationship paths in graph results                   |
+| `folder_name`   | string or list<string>| No       | Folder scope                                                  |
+| `end_user_id`   | string                | No       | User scope for retrieval                                      |
+
+### Completion Query (`query` endpoint)
+- Extends retrieval parameters with:
+  - `max_tokens`: Maximum tokens for generated response
+  - `temperature`: Model sampling temperature
+  - `prompt_overrides`: Custom prompt templates or enhancements
+  - `schema`: Optional structured output schema (Pydantic model or JSON schema dict)
+  - `chat_id`: Identifier for chat session to maintain history
+  - `stream_response`: Boolean to enable streaming response
+  - `llm_config`: Model provider configuration details (name, API key, base URL)
+
+### Batch Requests (`batch/documents`, `batch/chunks`)
+- Send arrays of document IDs or chunk sources.
+- Optional scoping parameters included.
+
+### Graph Operations (`create_graph`, `update_graph`)
+- Parameters include graph `name`, document filters, document lists, and optional prompt overrides.
+- Scoping via folder and end user is supported.
+
+---
+
+## 3. Response Structure
+
+Responses follow a consistent, structured pattern optimized for easy parsing.
+
+### Common Response Types
+
+- **Documents:** Represented with fields like `external_id`, `filename`, `metadata`, and ingestion status.
+- **Chunks:** Include `content` (text or image), `score`, `document_id`, `chunk_number`, metadata, content type, and download URL if applicable.
+- **Completions:** Text generated as answer or structured data according to schema; source documents included.
+- **Graphs:** Detailed JSON describing entities, relationships, and metadata.
+- **Batch Responses:** Arrays of documents or chunks with status information and error details if any.
+
+### Streaming Responses
+
+For streaming-enabled endpoints, events are sent as server-sent events (SSE) with:
+- Data chunks tagged with `type: assistant` for partial completion text
+- Final event tagged `type: done` with source information
+
+### Example: Retrieval Chunk Response
+
+```json
+[
+  {
+    "document_id": "1234",
+    "chunk_number": 1,
+    "content": "Text content of chunk",
+    "score": 0.95,
+    "metadata": {"author": "John Doe"},
+    "content_type": "text/plain",
+    "filename": "file.pdf",
+    "download_url": "https://..."
+  },
+  {
+    "document_id": "1235",
+    "chunk_number": 2,
+    "content": "data:image/png;base64,iVBORw0K...",
+    "score": 0.89,
+    "metadata": {"is_image": true},
+    "content_type": "image/png",
+    "filename": "image.png",
+    "download_url": "https://..."
+  }
+]
+```
+
+*Note:* Image content is base64-encoded when transferred and automatically decoded into image objects in SDK clients.
+
+---
+
+## 4. Best Practices for Requests
+
+### Parameter Usage
+- Always provide the `query` string for retrieval and completion endpoints.
+- Use `filters` judiciously to narrow down relevant documents or chunks.
+- Adjust `k` and `min_score` to tune result quantity and quality.
+- Use `use_colpali` flags when multimodal understanding is required for richer context.
+- Employ `folder_name` and `end_user_id` for multi-tenant or organizational scoping to maintain data separation.
+- Leverage `prompt_overrides` for fine-tuned control over knowledge graph extraction and generation prompts.
+- When using `schema` for structured output, prefer Pydantic models or well-formed JSON schemas.
+
+### Handling File Uploads
+- Provide file names explicitly when ingesting raw bytes or file-like objects.
+- Include metadata and rules in JSON-encoded fields alongside files.
+- Use parallel flag for batch file ingestion when supported to improve throughput.
+
+### Completion Queries
+- Use `max_tokens` and `temperature` to control the completion length and creativity.
+- Enable `stream_response` for improved front-end responsiveness and incremental display.
+- Use `chat_id` to maintain conversation context across requests.
+- Pass `llm_config` for advanced model-specific options, such as API keys or base URLs.
+
+---
+
+## 5. Error Handling and Debugging
+
+### Common Error Codes
+- **400 Bad Request:** Invalid parameters, malformed JSON, or schema errors.
+- **401 Unauthorized:** Missing or invalid authentication token.
+- **403 Forbidden:** Insufficient permissions, access to scoped data denied.
+- **404 Not Found:** Requested resource (document, graph, chunk) does not exist.
+- **429 Too Many Requests:** Rate limit or quota exceeded.
+- **500 Internal Server Error:** Unexpected server errors; contact support if persistent.
+
+### Debugging Tips
+- Validate JSON syntax and content types before sending requests.
+- Ensure authentication tokens are current and properly included.
+- Verify folder and user scopes match access permissions.
+- Use the request tracking and performance logs available in the SDK or server logs.
+- For file ingestion issues, check file paths, names, and MIME types.
+
+### Response Validation
+- Check response status codes and parse error messages for details.
+- For streaming responses, ensure the client correctly processes SSE streams.
+- Confirm that structured output matches defined schema.
+
+---
+
+## 6. Practical Examples
+
+### Example: Ingest Text Document
+```bash
+POST /ingest/text HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "content": "This is a sample document about AI.",
+  "filename": "sample.txt",
+  "metadata": {"category": "research"},
+  "use_colpali": true,
+  "folder_name": "research_docs",
+  "end_user_id": "user123"
+}
+```
+
+### Example: Retrieve Relevant Chunks
+```bash
+POST /retrieve/chunks HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "query": "Explain AI applications in healthcare.",
+  "k": 5,
+  "filters": {"category": "healthcare"},
+  "min_score": 0.7,
+  "use_colpali": true,
+  "folder_name": "healthcare_docs"
+}
+```
+
+### Example: Query with Structured Output Schema (Python SDK)
+```python
+from pydantic import BaseModel, Field
+
+class SummarySchema(BaseModel):
+    summary: str = Field(..., description="Short summary")
+
+response = morphik.query(
+    query="Summarize the document.",
+    filters={"category": "summary_test"},
+    schema=SummarySchema,
+    k=1
+)
+print(response.completion.summary)
+```
+
+### Example: Streaming Completion Response (Server-Sent Events)
+```http
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+
+data: {"type": "assistant", "content": "Artificial intelligence "}
+
+data: {"type": "assistant", "content": "is transforming healthcare..."}
+
+data: {"type": "done", "sources": [{"document_id": "1234", "chunk_number": 1, "score": 0.95}]}
+
+```
+
+---
+
+## 7. Progressive Workflow Example
+
+When ingesting, querying, and working with the API, a typical user flow looks like this:
+
+<Steps>
+<Step title="Authenticate and Initialize Client">
+Obtain your Morphik API token (URI) and initialize your HTTP client or SDK.
+</Step>
+<Step title="Ingest Documents">
+Send files or text documents via the ingestion endpoints, optionally specifying metadata, rules, and scopes.
+</Step>
+<Step title="Wait for Processing">
+Allow Morphik to parse, chunk, and embed your documents asynchronously.
+</Step>
+<Step title="Query Data">
+Use retrieval or completion endpoints to search for relevant chunks or generate answers, refining results with filters, folder, and user scopes.
+</Step>
+<Step title="Handle Responses">
+Parse returned document and chunk data or streaming completions as needed.
+</Step>
+<Step title="Iterate and Optimize">
+Adjust parameters like `k`, `min_score`, `use_colpali`, and prompt overrides for best results.
+</Step>
+</Steps>
+
+---
+
+## 8. Troubleshooting Common Issues
+
+<AccordionGroup title="Request & Response Troubleshooting">
+<Accordion title="Authentication Failures">
+- Ensure your bearer token or connection URI is correctly included in headers.
+- Verify token has not expired.
+- Check that your roles have required permissions.
+</Accordion>
+<Accordion title="Malformed JSON Payloads">
+- Validate JSON with online tools before sending.
+- Confirm all required parameters are present and types are correct.
+</Accordion>
+<Accordion title="File Upload Errors">
+- Verify file paths and names.
+- For byte streams, ensure filenames are provided.
+- Confirm correct `Content-Type` and multipart format.
+</Accordion>
+<Accordion title="No Results Returned">
+- Check query syntax and filters.
+- Adjust `k` and `min_score` for broader matches.
+- Ensure data is ingested and processed (check document status).
+</Accordion>
+<Accordion title="Schema Validation Errors">
+- Confirm that the provided schema matches Pydantic model format or valid JSON schema.
+- Review error messages carefully for missing required fields.
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Additional Resources
+
+- [Authentication Overview](api-reference/api-authentication-requests/auth-overview)
+- [Documents API Reference](api-reference/api-endpoints/documents-api)
+- [Knowledge Graphs API](api-reference/api-endpoints/knowledge-graphs-api)
+- [SDK Usage & Code Examples](api-reference/api-authentication-requests/sdk-examples)
+- [Error Handling & Status Codes](api-reference/api-operations-limits/error-handling)
+
+These will help deepen your understanding of request structures and workflows.
+
+---
+
+This concludes the detailed guide for Request & Response Patterns within Morphik's API ecosystem, empowering you to build solid integrations and maximize the platform's potential.
